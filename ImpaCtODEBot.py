@@ -3,6 +3,7 @@ from telethon.tl.types import *
 from telethon import *
 
 from OpenAI import TextGen
+import LanguageSupport
 import unicodedata
 import contextlib
 import asyncio
@@ -12,6 +13,8 @@ import html
 import json
 import sys
 import re
+
+LanguageSupport.ensure_language_support_images()
 
 client = TelegramClient('impactode', config.app_id, config.app_hash, connection_retries=None, retry_delay=15).start(bot_token=config.token) # token
 _run_queue = asyncio.Semaphore(config.concurrent_runs)

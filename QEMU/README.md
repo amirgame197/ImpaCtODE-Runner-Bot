@@ -12,7 +12,8 @@ An overlay is a QCOW2 image that references another QCOW2 image (its backing fil
 
 Only the **differences** from the backing image are stored, so the overlay remains small. For example, installing a language runtime only increases the overlay by roughly the size of the installed files instead of duplicating the entire base image.
 
-This is much more storage-efficient than copying `base.qcow2` for every environment.
+This is much more storage-efficient than copying `base.qcow2` for every environment.<br>
+Currently, the overlay backing image's path is relative, so moving `base.qcow2` will prevent the overlay from booting since it cannot find it anymore.
 
 ---
 

@@ -1,4 +1,3 @@
-
 from dataclasses import dataclass
 from pathlib import Path
 import contextlib
@@ -48,7 +47,8 @@ def platform_key():
 
 
 def qemu_subprocess_env():
-    """Return the environment required by the bundled QEMU binaries."""
+    """Return the environment required by the bundled QEMU binaries.
+    """
     if platform.system() != "Linux":
         return None
 
@@ -95,7 +95,8 @@ def host_memory_mb():
 
 
 async def host_virtualization():
-    """Return the available accelerator for the current QEMU host."""
+    """Return the available accelerator for the current QEMU host.
+    """
     global _accelerator
     if _accelerator:
         return _accelerator
@@ -137,7 +138,8 @@ async def host_virtualization():
 
 
 class QemuEnvironment:
-    """One disposable QEMU overlay controlled through the guest serial console."""
+    """One disposable QEMU overlay controlled through the guest serial console.
+    """
 
     def __init__(self, language, language_overlay):
         self.language = language
@@ -197,7 +199,8 @@ class QemuEnvironment:
             raise EnvironmentError(output.decode("utf-8", errors="replace"))
 
     async def start(self):
-        """Create the disposable overlay and wait for the guest ready marker."""
+        """Create the disposable overlay and wait for the guest ready marker.
+        """
         await self.create_overlay()
         _, qemu = self.qemu_paths()
         memory = max(1, host_memory_mb() // config.concurrent_runs)
@@ -308,7 +311,8 @@ class QemuEnvironment:
                 await asyncio.sleep(config.qemu_serial_chunk_delay)
 
     async def execute(self, command, record_command=True):
-        """Run one command from the guest work directory."""
+        """Run one command from the guest work directory.
+        """
         if not self.is_running:
             raise EnvironmentError("The QEMU environment is not running.")
 
@@ -345,7 +349,8 @@ class QemuEnvironment:
         return CommandResult(command, self.command_exit_code, self.output[start:])
 
     async def write_code_file(self, file_name, code):
-        """Write source code without adding it to the environment transcript."""
+        """Write source code without adding it to the environment transcript.
+        """
         path = f"{self.guest_workdir.rstrip('/')}/{file_name}"
         await self.execute(f"mkdir -p {shlex.quote(self.guest_workdir)} && : > {shlex.quote(path)}", record_command=False)
 
@@ -356,7 +361,8 @@ class QemuEnvironment:
         return path
 
     async def destroy(self, timed_out=False):
-        """Stop the VM and delete its temporary overlay."""
+        """Stop the VM and delete its temporary overlay.
+        """
         async with self.destroy_lock:
             self.timed_out = self.timed_out or timed_out
             if self.process and self.process.returncode is None:
