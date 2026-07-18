@@ -166,4 +166,5 @@ A language profile is mostly a config edit plus an overlay containing its runtim
 ## License
 
 This project is released under the [MIT License](LICENSE).
+
 QEMU is released under [GPL 2](QEMU/Binaries/Windows/COPYING).
