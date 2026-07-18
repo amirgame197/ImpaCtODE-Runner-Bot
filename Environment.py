@@ -203,8 +203,8 @@ class QemuEnvironment:
         """
         await self.create_overlay()
         _, qemu = self.qemu_paths()
-        memory = max(1, host_memory_mb() // config.concurrent_runs)
-        cpus = max(1, (os.cpu_count() or 1) // config.concurrent_runs)
+        memory = max(1, host_memory_mb() // config.concurrent_runs + 1)
+        cpus = max(1, (os.cpu_count() or 1) // config.concurrent_runs + 1)
         drive = self.overlay_path.resolve().as_posix()
 
         self.process = await asyncio.create_subprocess_exec(

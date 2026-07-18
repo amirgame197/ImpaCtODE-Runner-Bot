@@ -55,6 +55,7 @@ usage_instructions = """
 - ==/run==  Runs the code included in the message, or code in the message you reply to.
 
 - Use the ==Abort== button on an active run to stop and destroy its environment.
+- In future, artifact generation, multi-code support and more compatibility features will be added.
 
 ---
 <details open><summary>How it works</summary>
@@ -72,7 +73,7 @@ Failed runs may trigger an automatic environment repair attempt before possible 
 
 | **Supported** | **Languages** |
 |-|-|
-| **C#** | **C++** |
+| **C/C++** | **C#** |
 | **Rust** | **Go** |
 | **Python** | **Java** |
 | **Java Script** | **Type Script** |
@@ -183,14 +184,18 @@ languages_sequence = {
             "system_prompt": (
                 "You are a Debian code execution planner. The supplied source code has already been written to "
                 "the supplied file_name in the supplied current working directory inside a disposable VM. "
+
                 "Return an ordered array of non-interactive /bin/bash commands that should run one after another. "
                 "Inspect imports before planning dependencies. Python standard-library modules are already installed and must never be installed with pip; "
                 "this includes base64, os, json, platform, pathlib, sys, re, asyncio, and all other standard-library modules. "
+
                 "Code that imports only standard-library modules needs no dependency-install command. Do not add speculative pip installs. "
                 "Install only a confirmed third-party dependency when the source actually imports it, using python3 -m pip install --break-system-packages. "
                 "Current environment already has a full Python standard-library installation, with additional tools such as git and curl. "
+
                 "If retry_feedback is non-empty, it identifies a command from an earlier failed plan. Treat it as mandatory "
                 "correction context: do not emit that command or an equivalent invalid command. "
+
                 "Each command starts in the stated working directory, so use explicit paths or commands such as python3 -m pip instead of relying on shell state. "
                 "The final command must execute the supplied code in the foreground and wait for it to finish."
             ),
@@ -218,30 +223,136 @@ languages_sequence = {
 
     ],
     "JavaScript": [
-        # { 
-        #     "overlay_path": overlays_dir / "javascript-base.qcow2", "file_name": "code.js",
-        #     "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/javascript-base.qcow2.tar.xz"
-        # },
+        { 
+            "overlay_path": overlays_dir / "javascript-base.qcow2", "file_name": "code.js",
+            "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/javascript-base.qcow2.tar.xz"
+        },
+        {
+            "name": "Java Script execution plan",
+            "description": "Creating ordered Linux shell commands to run the JS code.",
+            "model_name": "codestral-latest",
+
+            "system_prompt": (
+                "You are a Debian Node.js code execution planner. The supplied source code has already been written to "
+                "the supplied file_name in the supplied current working directory inside a disposable VM. "
+                "Return an ordered array of non-interactive /bin/bash commands that should run one after another. "
+
+                "Inspect imports before planning dependencies. Node.js built-in modules are already installed and must never "
+                "be installed with npm; this includes fs, path, os, util, events, stream, http, https, url, crypto, child_process, "
+                "buffer, assert, axios, lodash, dotenv, uuid and all other Node.js built-in modules. "
+
+                "Code that imports only built-in Node.js modules needs no dependency-install command. "
+                "Do not add speculative npm installs. Install only confirmed third-party dependencies when the source actually "
+                "imports them, using npm install, if they're not in built-in modules. "
+
+                "Current environment already has Node.js, npm, and common execution tools installed. "
+                "Global packages may already be available through the configured Node.js environment. "
+
+                "If retry_feedback is non-empty, it identifies a command from an earlier failed plan. Treat it as mandatory "
+                "correction context: do not emit that command or an equivalent invalid command. "
+
+                "Each command starts in the stated working directory, so use explicit paths or commands and do not rely on "
+                "previous shell state. Use node to execute JavaScript files and tsx to execute TypeScript files when needed. "
+                "The final command must execute the supplied code in the foreground and wait for it to finish."
+            ),
+
+            "response_format": {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "JavaScriptExecutionPlanResponse",
+                    "schema": {
+                        "properties": {
+                            "commands": {
+                                "description": "Ordered shell commands. The final command runs the submitted code in the foreground.",
+                                "items": { "type": "string" },
+                                "minItems": 1,
+                                "type": "array"
+                            }
+                        },
+                        "required": ["commands"],
+                        "title": "JavaScriptExecutionPlanResponse",
+                        "type": "object"
+                    }
+                }
+            }
+        },
 
     ],
     "TypeScript": [
-        # { 
-        #     "overlay_path": overlays_dir / "javascript-base.qcow2", "file_name": "code.ts",
-        #     "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/typescript-base.qcow2.tar.xz"
-        # },
+        { 
+            "overlay_path": overlays_dir / "javascript-base.qcow2", "file_name": "code.ts",
+            "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/javascript-base.qcow2.tar.xz"
+        },
+        {
+            "name": "Type Script execution plan",
+            "description": "Creating ordered Linux shell commands to run the TS code.",
+            "model_name": "codestral-latest",
+
+            "system_prompt": (
+                "You are a Debian TypeScript code execution planner. The supplied source code has already been written to "
+                "the supplied file_name in the supplied current working directory inside a disposable VM. "
+                "Return an ordered array of non-interactive /bin/bash commands that should run one after another. "
+
+                "Inspect imports before planning dependencies. TypeScript and Node.js built-in modules are already installed and must never "
+                "be installed with npm; this includes fs, path, os, util, events, stream, http, https, url, crypto, child_process, "
+                "buffer, assert, axios, lodash, dotenv, uuid and all other Node.js built-in modules. "
+
+                "Code that imports only built-in Node.js modules needs no dependency-install command. "
+                "Do not add speculative npm installs. Install only confirmed third-party dependencies when the source actually "
+                "imports them, using npm install, if they're not in built-in modules. "
+
+                "Current environment already has Node.js, npm, TypeScript tooling, and tsx installed. "
+                "Use tsx to execute TypeScript files directly; do not compile with tsc unless the source specifically requires compilation. "
+                "Global packages are already available through the configured Node.js environment. "
+
+                "If retry_feedback is non-empty, it identifies a command from an earlier failed plan. Treat it as mandatory "
+                "correction context: do not emit that command or an equivalent invalid command. "
+
+                "Each command starts in the stated working directory, so use explicit paths or commands and do not rely on "
+                "previous shell state. Use tsx to execute supplied TypeScript files. "
+                "The final command must execute the supplied code in the foreground and wait for it to finish."
+            ),
+
+            "response_format": {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "TypeScriptExecutionPlanResponse",
+                    "schema": {
+                        "properties": {
+                            "commands": {
+                                "description": "Ordered shell commands. The final command runs the submitted code in the foreground.",
+                                "items": { "type": "string" },
+                                "minItems": 1,
+                                "type": "array"
+                            }
+                        },
+                        "required": ["commands"],
+                        "title": "TypeScriptExecutionPlanResponse",
+                        "type": "object"
+                    }
+                }
+            }
+        },
 
     ],
     "C#": [
         # { 
-        #     "overlay_path": overlays_dir / "csharp-base.qcow2", "file_name": "code.cs",
-        #     "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/csharp-base.qcow2.tar.xz"
+        #     "overlay_path": overlays_dir / "cfam-base.qcow2", "file_name": "code.cs",
+        #     "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/cfam-base.qcow2.tar.xz"
         # },
 
     ],
     "C++": [
         # { 
-        #     "overlay_path": overlays_dir / "cpp-base.qcow2", "file_name": "code.cpp",
-        #     "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/cpp-base.qcow2.tar.xz"
+        #     "overlay_path": overlays_dir / "cfam-base.qcow2", "file_name": "code.cpp",
+        #     "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/cfam-base.qcow2.tar.xz"
+        # },
+
+    ],
+    "C": [
+        # { 
+        #     "overlay_path": overlays_dir / "cfam-base.qcow2", "file_name": "code.c",
+        #     "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/cfam-base.qcow2.tar.xz"
         # },
 
     ],

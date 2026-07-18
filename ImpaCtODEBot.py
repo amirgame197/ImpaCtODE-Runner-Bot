@@ -44,7 +44,7 @@ async def process_message(event):
         
         # ? Message is not a reply, try running this message
         elif len(message_lower) > 5:
-            asyncio.create_task(running_sequence(event, get_message(event.message), event.sender_id))
+            asyncio.create_task(running_sequence(event, message, event.sender_id))
             return
         
         await event.reply("**Please reply to / send a message containing code(s).**\nUsage: `/run [code]`")
