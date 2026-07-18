@@ -1,6 +1,13 @@
 import os
 from pathlib import Path
+from dotenv import load_dotenv, set_key
+
 ROOT = Path(__file__).resolve().parent
+ENV_FILE = ROOT / ".env"
+
+# Load .env file if it exists
+if ENV_FILE.exists():
+    load_dotenv(ENV_FILE)
 
 # # #################### Basic Bot Configuration #######################################################
 
@@ -9,11 +16,25 @@ bot_name = "Automatic"     # ? ^^^^^^^^^^^^^^^^^^^^
 bot_id = "Automatic"       # ? ^^^^^^^^^^^^^^^^^^^^
 
 def get_environment_variable(name):
-    """Get an environment variable value, or return a default if not set.
+    """Get an environment variable value, prompting user if not set and saving to .env.
     """
-    variable = os.environ.get(name, None)
-    if variable is None:
-        raise ValueError(f"Environment variable '{name}' is not set.")
+    variable = os.environ.get(name)
+    if variable is not None:
+        return variable
+    
+    # Prompt user for the value
+    prompt = f"Enter value for {name}: "
+    variable = input(prompt).strip()
+    
+    if not variable:
+        raise ValueError(f"No value provided for '{name}'.")
+    
+    # Set in current process environment
+    os.environ[name] = variable
+    
+    # Save to .env file for persistence across sessions
+    set_key(str(ENV_FILE), name, variable)
+    print(f"Saved {name} to {ENV_FILE}")
     
     return variable
 
