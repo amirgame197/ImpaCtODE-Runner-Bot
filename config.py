@@ -145,14 +145,14 @@ environment_details_command = (
 )
 # ? Command to collect the guest environment details
 
-base_image_url = "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/download/latest//base.qcow2.tar.xz"
+base_image_url = "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/base.qcow2.tar.xz"
 # ? URL to the base Debian image used for all language overlays (LanguageSupport.py)
 
 languages_sequence = {
     "Python": [
         { 
             "overlay_path": overlays_dir / "python-base.qcow2", "file_name": "code.py",
-            "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/download/latest/python-base.qcow2.tar.xz"
+            "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/python-base.qcow2.tar.xz"
         },
         {
             "name": "Python execution plan",
@@ -199,49 +199,49 @@ languages_sequence = {
     "JavaScript": [
         # { 
         #     "overlay_path": overlays_dir / "javascript-base.qcow2", "file_name": "code.js",
-        #     "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/download/latest/python-base.qcow2.tar.xz"
+        #     "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/javascript-base.qcow2.tar.xz"
         # },
 
     ],
     "TypeScript": [
         # { 
         #     "overlay_path": overlays_dir / "javascript-base.qcow2", "file_name": "code.ts",
-        #     "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/download/latest/javascript-base.qcow2.tar.xz"
+        #     "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/typescript-base.qcow2.tar.xz"
         # },
 
     ],
     "C#": [
         # { 
         #     "overlay_path": overlays_dir / "csharp-base.qcow2", "file_name": "code.cs",
-        #     "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/download/latest/csharp-base.qcow2.tar.xz"
+        #     "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/csharp-base.qcow2.tar.xz"
         # },
 
     ],
     "C++": [
         # { 
         #     "overlay_path": overlays_dir / "cpp-base.qcow2", "file_name": "code.cpp",
-        #     "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/download/latest/cpp-base.qcow2.tar.xz"
+        #     "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/cpp-base.qcow2.tar.xz"
         # },
 
     ],
     "Go": [
         # { 
         #     "overlay_path": overlays_dir / "go-base.qcow2", "file_name": "code.go",
-        #     "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/download/latest/go-base.qcow2.tar.xz"
+        #     "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/go-base.qcow2.tar.xz"
         # },
 
     ],
     "Rust": [
         # { 
         #     "overlay_path": overlays_dir / "rust-base.qcow2", "file_name": "code.rs",
-        #     "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/download/latest/rust-base.qcow2.tar.xz"
+        #     "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/rust-base.qcow2.tar.xz"
         # },
 
     ],
     "Java": [
         # { 
         #     "overlay_path": overlays_dir / "java-base.qcow2", "file_name": "code.java",
-        #     "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/download/latest/java-base.qcow2.tar.xz"
+        #     "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/java-base.qcow2.tar.xz"
         # },
 
     ],
