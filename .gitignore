@@ -216,3 +216,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Telethon sessions
+*.session
+
+# qemu image file
+*.qcow2
