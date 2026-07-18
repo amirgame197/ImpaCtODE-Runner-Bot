@@ -4,6 +4,9 @@
 
 It contains the main operating system files and **should not be used directly**. Instead, create an **overlay** from the base image and use that overlay.
 
+If this directory does not contain any `.qcow2` files, you need to run `ImpaCtODE.py` or `LanguageSupport.py` to download the base and language support files.<br>
+The download and extract process is automatic, but you can download files from github manually.
+
 ---
 
 ## What is an Overlay?
