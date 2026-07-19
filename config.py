@@ -129,10 +129,6 @@ qemu_guest_workdir = "/root" # "/tmp/impactode"
 qemu_ready_settle_seconds = 3
 # ? Wait for automatic serial login to finish after sandbox_ready_marker before sending commands
 
-qemu_serial_chunk_size = 1
-qemu_serial_chunk_delay = 0.01
-# ? Pace serial-console input so long base64 transfers are not dropped by the guest terminal
-
 telegram_output_limit = 3584
 # ? The latest characters of the environment transcript shown in the continuously edited Telegram message
 

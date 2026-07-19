@@ -170,8 +170,14 @@ class QemuEnvironment:
         self.command_exit_code = None
         self.command_error = None
         self.reader_task = None
+        self.qemu_output_task = None
         self.destroy_lock = asyncio.Lock()
         self.serial_buffer = ""
+        self.qemu_output = ""
+        self.serial_server = None
+        self.serial_port = None
+        self.serial_reader = None
+        self.serial_writer = None
 
     @property
     def is_running(self):
@@ -183,6 +189,9 @@ class QemuEnvironment:
 
     def append_output(self, text):
         self.output = (self.output + text)[-config.captured_environment_output_limit:]
+
+    def append_qemu_output(self, text):
+        self.qemu_output = (self.qemu_output + text)[-config.captured_environment_output_limit:]
 
     def qemu_paths(self):
         executables = config.qemu_executable[platform_key()]
@@ -211,6 +220,58 @@ class QemuEnvironment:
         if process.returncode:
             raise EnvironmentError(output.decode("utf-8", errors="replace"))
 
+    async def start_serial_server(self):
+        """Listen for QEMU's dedicated guest serial connection.
+
+        Keeping the guest console off QEMU's stdio prevents the QEMU monitor
+        and its escape handling from sharing a channel with command data.
+        """
+        self.serial_server = await asyncio.start_server(
+            self.accept_serial_connection,
+            host="127.0.0.1",
+            port=0,
+        )
+        sockets = self.serial_server.sockets
+        if not sockets:
+            raise EnvironmentError("Could not create the QEMU serial listener.")
+        self.serial_port = sockets[0].getsockname()[1]
+
+    async def accept_serial_connection(self, reader, writer):
+        """Accept exactly one connection from the QEMU serial backend."""
+        if self.serial_writer is not None:
+            writer.close()
+            with contextlib.suppress(ConnectionError):
+                await writer.wait_closed()
+            return
+
+        self.serial_reader = reader
+        self.serial_writer = writer
+        # No other local process can take over the serial channel after QEMU.
+        self.serial_server.close()
+        self.reader_task = asyncio.create_task(self.read_serial_output(reader))
+
+    async def close_serial_transport(self):
+        if self.serial_server:
+            self.serial_server.close()
+            with contextlib.suppress(Exception):
+                await self.serial_server.wait_closed()
+            self.serial_server = None
+
+        if self.serial_writer:
+            self.serial_writer.close()
+            with contextlib.suppress(ConnectionError):
+                await self.serial_writer.wait_closed()
+            self.serial_writer = None
+        self.serial_reader = None
+
+    async def read_qemu_output(self):
+        """Drain QEMU diagnostics without treating them as guest serial data."""
+        while True:
+            data = await self.process.stdout.read(4096)
+            if not data:
+                break
+            self.append_qemu_output(data.decode("utf-8", errors="replace"))
+
     async def start(self):
         """Create the disposable overlay and wait for the guest ready marker.
         """
@@ -220,26 +281,35 @@ class QemuEnvironment:
         cpus = max(1, (os.cpu_count() or 1) // config.concurrent_runs)
         drive = self.overlay_path.resolve().as_posix()
 
-        self.process = await asyncio.create_subprocess_exec(
-            str(qemu),
-            *qemu_firmware_args(),
-            "-no-reboot",
-            "-m", str(memory),
-            "-smp", str(cpus),
-            "-drive", f"file={drive},if=virtio,format=qcow2",
-            "-device", "virtio-net-pci,netdev=net0",
-            "-netdev", "user,id=net0",
-            "-serial", "mon:stdio",
-            "-display", "none",
-            "-accel", await host_virtualization(),
-            stdin=asyncio.subprocess.PIPE,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.STDOUT,
-            cwd=qemu.parent,
-            env=qemu_subprocess_env(),
-        )
+        await self.start_serial_server()
+
+        try:
+            self.process = await asyncio.create_subprocess_exec(
+                str(qemu),
+                *qemu_firmware_args(),
+                "-no-reboot",
+                "-m", str(memory),
+                "-smp", str(cpus),
+                "-drive", f"file={drive},if=virtio,format=qcow2",
+                "-device", "virtio-net-pci,netdev=net0",
+                "-netdev", "user,id=net0",
+                "-chardev", f"socket,id=serial0,host=127.0.0.1,port={self.serial_port},server=off",
+                "-serial", "chardev:serial0",
+                "-monitor", "none",
+                "-display", "none",
+                "-accel", await host_virtualization(),
+                stdin=asyncio.subprocess.DEVNULL,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT,
+                cwd=qemu.parent,
+                env=qemu_subprocess_env(),
+            )
+        except Exception:
+            await self.close_serial_transport()
+            raise
+
         self.deadline = asyncio.get_running_loop().time() + config.env_timeout
-        self.reader_task = asyncio.create_task(self.read_serial_output())
+        self.qemu_output_task = asyncio.create_task(self.read_qemu_output())
         ready_wait = asyncio.create_task(self.ready.wait())
         process_wait = asyncio.create_task(self.process.wait())
 
@@ -251,8 +321,11 @@ class QemuEnvironment:
             )
             if ready_wait not in done:
                 if process_wait in done:
-                    await self.reader_task
-                    output = self.output.strip()
+                    if self.reader_task:
+                        await self.reader_task
+                    if self.qemu_output_task:
+                        await self.qemu_output_task
+                    output = "\n".join(part for part in (self.output.strip(), self.qemu_output.strip()) if part)
                     details = f"\n{output}" if output else ""
                     raise EnvironmentError(f"QEMU exited before the guest was ready.{details}")
                 raise EnvironmentTimeoutError("The QEMU guest did not report that it was ready before the environment timeout.")
@@ -268,10 +341,10 @@ class QemuEnvironment:
                     with contextlib.suppress(asyncio.CancelledError):
                         await task
 
-    async def read_serial_output(self):
+    async def read_serial_output(self, reader):
         try:
             while True:
-                data = await self.process.stdout.read(4096)
+                data = await reader.read(4096)
                 if not data:
                     break
                 self.consume_serial_text(data.decode("utf-8", errors="replace"))
@@ -293,10 +366,6 @@ class QemuEnvironment:
             self.consume_serial_line(f"{line}\n")
 
     def consume_serial_line(self, line):
-        if "qemu-system-x86_64" in line or "Time jumped backwards" in line:
-            return
-        # ? Ignore QEMU-related warnings that are not relevant to the user
-
         if config.sandbox_ready_marker in line:
             self.ready.set()
 
@@ -316,12 +385,14 @@ class QemuEnvironment:
         self.command_done.set()
 
     async def write_serial_line(self, text):
-        data = text.encode("utf-8")
-        for start in range(0, len(data), config.qemu_serial_chunk_size):
-            self.process.stdin.write(data[start:start + config.qemu_serial_chunk_size])
-            await self.process.stdin.drain()
-            if start + config.qemu_serial_chunk_size < len(data):
-                await asyncio.sleep(config.qemu_serial_chunk_delay)
+        if not self.serial_writer or self.serial_writer.is_closing():
+            raise EnvironmentError("The QEMU serial console is not connected.")
+
+        self.serial_writer.write(text.encode("utf-8"))
+        try:
+            await self.serial_writer.drain()
+        except (BrokenPipeError, ConnectionError) as error:
+            raise EnvironmentError("The QEMU serial console closed while writing a command.") from error
 
     async def execute(self, command, record_command=True):
         """Run one command from the guest work directory.
@@ -391,6 +462,13 @@ class QemuEnvironment:
                 self.reader_task.cancel()
                 with contextlib.suppress(asyncio.CancelledError):
                     await self.reader_task
+
+            if self.qemu_output_task and not self.qemu_output_task.done():
+                self.qemu_output_task.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await self.qemu_output_task
+
+            await self.close_serial_transport()
 
             if self.overlay_path:
                 for _ in range(3):

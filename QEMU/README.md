@@ -88,6 +88,10 @@ The disposable overlay is deleted after the run, while the language overlay rema
 
 ## Windows
 
+These manual commands use `mon:stdio` for interactive debugging. The bot uses
+a separate loopback TCP character device for its guest serial channel, so the
+QEMU monitor cannot consume or alter command bytes.
+
 ```bat
 Binaries\Windows\qemu-system-x86_64.exe ^
 -m 1024 ^
@@ -124,7 +128,7 @@ Binaries/Linux/bin/qemu-system-x86_64 \
 | CPU Cores | 2 |
 | Disk | VirtIO QCOW2 |
 | Network | User-mode NAT |
-| Console | Serial (`mon:stdio`) |
+| Console | Dedicated TCP serial channel (bot) / `mon:stdio` (manual debugging) |
 | Display | None |
 | Reboot | Disabled |
 | Acceleration | WHPX (Windows) / KVM (Linux) |
