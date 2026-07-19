@@ -1,13 +1,13 @@
-# ImpaCtODE Runner Bot
+<img width="1280" height="640" alt="impactodebanner" src="https://github.com/user-attachments/assets/5f6e6da5-b68b-49eb-85f4-eb5d6a14b731" />
 
-Run code from Telegram inside a fresh, disposable Linux virtual machine.
+## Run code from Telegram inside a fresh, disposable Linux virtual machine.
 
 **ImpaCtODE** uses AI to inspect the submitted code, plans the commands and dependency installation it needs, then runs everything in an isolated QEMU virtual machine.
 
 Try the public demo: [**@ImpaCtODE_Bot**](https://t.me/ImpaCtODE_Bot).
 
 > [!NOTE]
-> The demo currently runs on my own system, which is not especially fast. It may not be the smoothest experience, but it works and is a good way to see the project in action.
+> The demo currently runs on my own system, which is not especially fast (mostly for compile-based languages). It may not be the smoothest experience, but it works and is a good way to see the project in action.
 
 ## What it does
 
@@ -26,6 +26,12 @@ When a run starts, the bot:
 Each sandbox normally has **1 GB RAM**, **2 CPU cores**, and a maximum lifetime of **15 minutes**. Failed runs can receive an automatic environment-repair attempt before the bot shows possible code fixes. The VM is destroyed after the run, so it does not modify your workstation or the next run's environment.
 
 The bot is built with Python, OpenAI-compatible SDK, [Telethon](https://codeberg.org/Lonami/Telethon) and bundled QEMU binaries for Windows and Linux.
+
+## AI assistance
+
+This project was built with GPT-5.6's help, especially around the environment-handling parts of the codebase. It helped me design and implement the QEMU execution system, including launching and controlling the VM through Python's async subprocess handling with `asyncio.create_subprocess_exec`.
+
+It also helped with the structured AI response handling used for code detection and execution planning, where responses follow a JSON schema so they are predictable and ready to parse. The project design, decisions, testing, and integration were done by me.
 
 ## Supported languages
 
@@ -148,11 +154,12 @@ Adding a language is basically easy:
    
 > [!NOTE]
 > It is recommended to run the following commands to clean the final cache before shutting the overlay down:
-> ```
+> ```bash
 > apt clean
 > rm -rf /var/lib/apt/lists/*
 > rm -rf /tmp/*
-> rm -rf /var/tmp/*```
+> rm -rf /var/tmp/*
+> ```
 
 3. Add or enable that language's entry in `languages_sequence` in [`config.py`](config.py). Set its `overlay_path`, source `file_name`, optional release `image_url`, and an execution-planning step.
 4. Restart the bot and test it with a small program.

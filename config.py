@@ -55,7 +55,7 @@ usage_instructions = """
 - ==/run==  Runs the code included in the message, or code in the message you reply to.
 
 - Use the ==Abort== button on an active run to stop and destroy its environment.
-- In future, artifact generation, multi-code support and more compatibility features will be added.
+- In future, artifact generation, multi-code support and more speed optimizations / compatibility features will be added.
 
 ---
 <details open><summary>How it works</summary>
@@ -76,7 +76,7 @@ Failed runs may trigger an automatic environment repair attempt before possible 
 | **C/C++** | **C#** |
 | **Rust** | **Go** |
 | **Python** | **Java** |
-| **Java Script** | **Type Script** |
+| **JavaScript** | **TypeScript** |
 
 
 ---
@@ -228,7 +228,7 @@ languages_sequence = {
             "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/javascript-base.qcow2.tar.xz"
         },
         {
-            "name": "Java Script execution plan",
+            "name": "JavaScript execution plan",
             "description": "Creating ordered Linux shell commands to run the JS code.",
             "model_name": "codestral-latest",
 
@@ -284,7 +284,7 @@ languages_sequence = {
             "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/javascript-base.qcow2.tar.xz"
         },
         {
-            "name": "Type Script execution plan",
+            "name": "TypeScript execution plan",
             "description": "Creating ordered Linux shell commands to run the TS code.",
             "model_name": "codestral-latest",
 
@@ -336,45 +336,373 @@ languages_sequence = {
 
     ],
     "C#": [
-        # { 
-        #     "overlay_path": overlays_dir / "cfam-base.qcow2", "file_name": "code.cs",
-        #     "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/cfam-base.qcow2.tar.xz"
-        # },
+        { 
+            "overlay_path": overlays_dir / "cfam-base.qcow2", "file_name": "code.cs",
+            "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/cfam-base.qcow2.tar.xz"
+        },
+        {
+            "name": "C# execution plan",
+            "description": "Creating ordered Linux shell commands to run the C# code.",
+            "model_name": "codestral-latest",
+
+            "system_prompt": (
+                "You are a Debian C# code execution planner. The supplied source code has already been written to "
+                "the supplied file_name in the supplied current working directory inside a disposable VM. "
+                "Return an ordered array of non-interactive /bin/bash commands that should run one after another. "
+
+                "Inspect using directives and #r references before planning dependencies. Standard .NET libraries are already installed "
+                "and must never be installed separately; this includes System, System.IO, System.Collections, System.Collections.Generic, "
+                "System.Linq, System.Net, System.Net.Http, System.Threading, System.Threading.Tasks, and all other standard .NET namespaces. "
+
+                "Code that imports only standard .NET namespaces needs no dependency-install command. "
+                "Do not add speculative NuGet package installs. Install only confirmed external NuGet dependencies when the source "
+                "actually requires them. "
+
+                "Current environment already has the .NET SDK and dotnet-script installed. "
+                "Use 'dotnet-script code.cs' to execute supplied C# files directly. Do not create projects, csproj files, or use dotnet new "
+                "unless the source specifically requires a project structure. "
+
+                "Global .NET tools are already available through the configured environment. "
+                "Do not reinstall dotnet, the SDK, or dotnet-script. "
+
+                "If retry_feedback is non-empty, it identifies a command from an earlier failed plan. Treat it as mandatory "
+                "correction context: do not emit that command or an equivalent invalid command. "
+
+                "Each command starts in the stated working directory, so use explicit paths or commands and do not rely on "
+                "previous shell state. Use 'dotnet-script --version' syntax when checking the installed script runner. "
+                "The dotnet-script is already installed in the environment. "
+                "The final command must execute the supplied C# code in the foreground and wait for it to finish."
+            ),
+
+            "response_format": {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "CSharpExecutionPlanResponse",
+                    "schema": {
+                        "properties": {
+                            "commands": {
+                                "description": "Ordered shell commands. The final command runs the submitted code in the foreground.",
+                                "items": { "type": "string" },
+                                "minItems": 1,
+                                "type": "array"
+                            }
+                        },
+                        "required": ["commands"],
+                        "title": "CSharpExecutionPlanResponse",
+                        "type": "object"
+                    }
+                }
+            }
+        },
 
     ],
     "C++": [
-        # { 
-        #     "overlay_path": overlays_dir / "cfam-base.qcow2", "file_name": "code.cpp",
-        #     "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/cfam-base.qcow2.tar.xz"
-        # },
+        { 
+            "overlay_path": overlays_dir / "cfam-base.qcow2", "file_name": "code.cpp",
+            "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/cfam-base.qcow2.tar.xz"
+        },
+        {
+            "name": "C++ execution plan",
+            "description": "Creating ordered Linux shell commands to run the C++ code.",
+            "model_name": "codestral-latest",
+
+            "system_prompt": (
+                "You are a Debian C++ code execution planner. The supplied source code has already been written to "
+                "the supplied file_name in the supplied current working directory inside a disposable VM. "
+                "Return an ordered array of non-interactive /bin/bash commands that should run one after another. "
+
+                "Inspect #include directives before planning dependencies. Standard C++ headers are already installed and must never "
+                "be installed separately; this includes iostream, vector, string, map, unordered_map, algorithm, filesystem, "
+                "memory, thread, mutex, chrono, random, regex, and all other standard C++ library headers. "
+
+                "Code that imports only standard C++ headers needs no dependency-install command. "
+                "Do not add speculative apt installs. Install only confirmed third-party development dependencies when the source "
+                "actually includes them and the required Debian package is clear, using apt install -y. "
+
+                "Current environment already has GCC, G++, standard build tools, pkg-config, cmake, gdb, libcurl development headers, "
+                "OpenSSL development headers, zlib development headers, and SQLite development headers installed. "
+                "Do not reinstall existing tools or libraries. "
+
+                "Compile C++ source files using g++. Prefer modern standards such as -std=c++17 or -std=c++20 when appropriate. "
+                "Use required linker flags when the source imports external libraries. "
+
+                "The final command must compile and execute the supplied C++ code in the foreground and wait for it to finish. "
+
+                "If retry_feedback is non-empty, it identifies a command from an earlier failed plan. Treat it as mandatory "
+                "correction context: do not emit that command or an equivalent invalid command. "
+
+                "Each command starts in the stated working directory, so use explicit paths or commands and do not rely on "
+                "previous shell state."
+            ),
+
+            "response_format": {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "CppExecutionPlanResponse",
+                    "schema": {
+                        "properties": {
+                            "commands": {
+                                "description": "Ordered shell commands. The final command runs the submitted code in the foreground.",
+                                "items": { "type": "string" },
+                                "minItems": 1,
+                                "type": "array"
+                            }
+                        },
+                        "required": ["commands"],
+                        "title": "CppExecutionPlanResponse",
+                        "type": "object"
+                    }
+                }
+            }
+        },
 
     ],
     "C": [
-        # { 
-        #     "overlay_path": overlays_dir / "cfam-base.qcow2", "file_name": "code.c",
-        #     "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/cfam-base.qcow2.tar.xz"
-        # },
+        { 
+            "overlay_path": overlays_dir / "cfam-base.qcow2", "file_name": "code.c",
+            "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/cfam-base.qcow2.tar.xz"
+        },
+        {
+            "name": "C execution plan",
+            "description": "Creating ordered Linux shell commands to run the C code.",
+            "model_name": "codestral-latest",
+
+            "system_prompt": (
+                "You are a Debian C code execution planner. The supplied source code has already been written to "
+                "the supplied file_name in the supplied current working directory inside a disposable VM. "
+                "Return an ordered array of non-interactive /bin/bash commands that should run one after another. "
+
+                "Inspect #include directives before planning dependencies. Standard C headers are already installed and must never "
+                "be installed separately; this includes stdio.h, stdlib.h, string.h, stdint.h, stdbool.h, math.h, time.h, "
+                "unistd.h, errno.h, signal.h, pthread.h, and all other standard C library headers. "
+
+                "Code that imports only standard C headers needs no dependency-install command. "
+                "Do not add speculative apt installs. Install only confirmed third-party development dependencies when the source "
+                "actually includes them and the required Debian package is clear, using apt install -y. "
+
+                "Current environment already has GCC, standard build tools, pkg-config, cmake, gdb, libcurl development headers, "
+                "OpenSSL development headers, zlib development headers, and SQLite development headers installed. "
+                "Do not reinstall existing tools or libraries. "
+
+                "Compile C source files using gcc. Use appropriate compiler flags when required by the source. "
+                "The final command must compile and execute the supplied C code in the foreground and wait for it to finish. "
+
+                "If retry_feedback is non-empty, it identifies a command from an earlier failed plan. Treat it as mandatory "
+                "correction context: do not emit that command or an equivalent invalid command. "
+
+                "Each command starts in the stated working directory, so use explicit paths or commands and do not rely on "
+                "previous shell state."
+            ),
+
+            "response_format": {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "CExecutionPlanResponse",
+                    "schema": {
+                        "properties": {
+                            "commands": {
+                                "description": "Ordered shell commands. The final command runs the submitted code in the foreground.",
+                                "items": { "type": "string" },
+                                "minItems": 1,
+                                "type": "array"
+                            }
+                        },
+                        "required": ["commands"],
+                        "title": "CExecutionPlanResponse",
+                        "type": "object"
+                    }
+                }
+            }
+        },
 
     ],
     "Go": [
-        # { 
-        #     "overlay_path": overlays_dir / "go-base.qcow2", "file_name": "code.go",
-        #     "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/go-base.qcow2.tar.xz"
-        # },
+        { 
+            "overlay_path": overlays_dir / "go-base.qcow2", "file_name": "code.go",
+            "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/go-base.qcow2.tar.xz"
+        },
+        {
+            "name": "Go execution plan",
+            "description": "Creating ordered Linux shell commands to run the Go code.",
+            "model_name": "codestral-latest",
+
+            "system_prompt": (
+                "You are a Debian Go code execution planner. The supplied source code has already been written to "
+                "the supplied file_name in the supplied current working directory inside a disposable VM. "
+                "Return an ordered array of non-interactive /bin/bash commands that should run one after another. "
+
+                "Inspect import statements before planning dependencies. Go's standard library is already installed and must never "
+                "be installed separately; this includes fmt, os, io, net/http, encoding/json, strings, bytes, path/filepath, "
+                "crypto/*, database/sql, sync, time, context, math, strconv, regexp, log, testing, and all other Go standard-library packages. "
+
+                "Do not attempt to manually install Go packages using 'go get'. "
+                "The current working directory is already initialized as a Go module with a valid go.mod file. "
+                "When third-party packages are imported, use 'go mod tidy' to resolve and download only the required dependencies. "
+                "If the source imports only standard-library packages, do not emit a 'go mod tidy' command. "
+
+                "Current environment already has the Go toolchain installed and ready to use. "
+                "Do not recreate or modify the module using 'go mod init'. "
+
+                "If retry_feedback is non-empty, it identifies a command from an earlier failed plan. Treat it as mandatory "
+                "correction context: do not emit that command or an equivalent invalid command. "
+
+                "Each command starts in the stated working directory, so use explicit commands and do not rely on previous shell state. "
+                "Execute Go programs using 'go run'. "
+
+                "The final command must execute the supplied Go code in the foreground and wait for it to finish."
+            ),
+
+            "response_format": {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "GoExecutionPlanResponse",
+                    "schema": {
+                        "properties": {
+                            "commands": {
+                                "description": "Ordered shell commands. The final command runs the submitted code in the foreground.",
+                                "items": { "type": "string" },
+                                "minItems": 1,
+                                "type": "array"
+                            }
+                        },
+                        "required": ["commands"],
+                        "title": "GoExecutionPlanResponse",
+                        "type": "object"
+                    }
+                }
+            }
+        },
 
     ],
     "Rust": [
-        # { 
-        #     "overlay_path": overlays_dir / "rust-base.qcow2", "file_name": "code.rs",
-        #     "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/rust-base.qcow2.tar.xz"
-        # },
+        { 
+            "overlay_path": overlays_dir / "rust-base.qcow2", "file_name": "src/main.rs",
+            "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/rust-base.qcow2.tar.xz"
+        },
+        {
+            "name": "Rust execution plan",
+            "description": "Creating ordered Linux shell commands to run the Rust code.",
+            "model_name": "codestral-latest",
+
+            "system_prompt": (
+                "You are a Debian Rust code execution planner. The supplied source code has already been written to "
+                "the supplied file_name in the supplied current working directory inside a disposable VM. "
+                "Return an ordered array of non-interactive /bin/bash commands that should run one after another. "
+
+                "Inspect use statements before planning dependencies. Rust standard library modules are already installed and must never "
+                "be installed separately; this includes std, core, alloc, collections, fs, io, net, thread, sync, time, process, "
+                "env, path, fmt, and all other Rust standard-library modules. "
+
+                "Code that imports only Rust standard-library modules needs no dependency-install command. "
+                "Do not add speculative crate installations. Add only confirmed external Rust crates when the source code actually "
+                "uses them. Use 'cargo add <crate-name>' to install external dependencies, and include required features when the "
+                "source code clearly requires them. "
+
+                "Current environment already has rustc, cargo, and cargo-edit installed. "
+                "The current working directory is already configured as a Cargo project with Cargo.toml and src/main.rs. "
+                "Do not run cargo init, create new projects, or manually edit Cargo.toml. "
+
+                "Use 'cargo add' for dependencies and 'cargo run' to compile and execute the supplied Rust code. "
+                "Cargo will automatically resolve, download, and compile dependencies after they are added. "
+
+                "If retry_feedback is non-empty, it identifies a command from an earlier failed plan. Treat it as mandatory "
+                "correction context: do not emit that command or an equivalent invalid command. "
+
+                "Each command starts in the stated working directory, so use explicit commands and do not rely on previous shell state. "
+                "Use cargo run as the final execution command. "
+
+                "The final command must execute the supplied Rust code in the foreground and wait for it to finish."
+            ),
+
+            "response_format": {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "RustExecutionPlanResponse",
+                    "schema": {
+                        "properties": {
+                            "commands": {
+                                "description": "Ordered shell commands. The final command runs the submitted code in the foreground.",
+                                "items": { "type": "string" },
+                                "minItems": 1,
+                                "type": "array"
+                            }
+                        },
+                        "required": ["commands"],
+                        "title": "RustExecutionPlanResponse",
+                        "type": "object"
+                    }
+                }
+            }
+        },
 
     ],
     "Java": [
-        # { 
-        #     "overlay_path": overlays_dir / "java-base.qcow2", "file_name": "code.java",
-        #     "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/java-base.qcow2.tar.xz"
-        # },
+        { 
+            "overlay_path": overlays_dir / "java-base.qcow2", "file_name": "src/main/java/Main.java",
+            "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/java-base.qcow2.tar.xz"
+        },
+        {
+            "name": "Java execution plan",
+            "description": "Creating ordered Linux shell commands to run the Java code.",
+            "model_name": "codestral-latest",
+
+            "system_prompt": (
+                "You are a Debian Java code execution planner. The supplied source code has already been written to "
+                "the supplied file_name in the supplied current working directory inside a disposable VM. "
+                "Return an ordered array of non-interactive /bin/bash commands that should run one after another. "
+
+                "Inspect import statements before planning dependencies. Java standard library packages are already installed and must never "
+                "be installed separately; this includes java.lang, java.util, java.io, java.nio, java.net, java.time, java.math, "
+                "java.sql, java.security, java.crypto, javax.* standard modules, and all other classes included with the Java Development Kit. "
+
+                "Code that imports only Java standard library classes needs no external dependency entries. "
+                "Do not add speculative Maven dependencies. Add only confirmed third-party dependencies required by imports in the source code. "
+
+                "The current environment already has OpenJDK 21 and Maven installed. "
+                "The current working directory is already a Maven project with the standard layout: "
+                "./src/main/java/Main.java and ./pom.xml. "
+                "Do not run mvn archetype commands, do not create a new project, and do not move or modify the supplied Java source file. "
+
+                "When external libraries are required, create or replace pom.xml with a valid Maven project configuration. "
+                "The pom.xml must target Java 21 using maven.compiler.source and maven.compiler.target set to 21. "
+                "Use Maven Central dependency coordinates with explicit versions. "
+                "Include required build configuration for executing the Main class using exec-maven-plugin. "
+                "Do not add unnecessary plugins or dependencies. "
+                "Write pom.xml using cat with a heredoc, e.g.: cat > pom.xml << 'EOF' ... EOF"
+
+                "Use Maven to resolve dependencies and compile the program. "
+                "Use 'mvn compile exec:java' as the execution command. "
+                "Maven will automatically download required dependencies from Maven Central. "
+
+                "If retry_feedback is non-empty, it identifies a command from an earlier failed plan. Treat it as mandatory "
+                "correction context: do not emit that command or an equivalent invalid command. "
+
+                "Each command starts in the stated working directory, so use explicit commands and do not rely on previous shell state. "
+                "Keep generated files inside the current project directory. "
+
+                "The final command must execute the supplied Java code in the foreground and wait for it to finish."
+            ),
+
+            "response_format": {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "JavaExecutionPlanResponse",
+                    "schema": {
+                        "properties": {
+                            "commands": {
+                                "description": "Ordered shell commands. The final command runs the submitted code in the foreground.",
+                                "items": { "type": "string" },
+                                "minItems": 1,
+                                "type": "array"
+                            }
+                        },
+                        "required": ["commands"],
+                        "title": "JavaExecutionPlanResponse",
+                        "type": "object"
+                    }
+                }
+            }
+        },
 
     ],
 }

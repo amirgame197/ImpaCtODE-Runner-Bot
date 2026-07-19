@@ -95,7 +95,13 @@ def host_memory_mb():
 
 
 async def host_virtualization():
-    """Return the available accelerator for the current QEMU host.
+    """Return the best usable accelerator for the current QEMU host.
+
+    QEMU can be built with an accelerator without the host being configured to
+    use it (for example, when the Windows Hypervisor Platform feature is
+    disabled).  Keep QEMU running briefly with the requested accelerator to
+    verify that it is usable, rather than only checking whether it is compiled
+    into the bundled binary.
     """
     global _accelerator
     if _accelerator:
@@ -106,11 +112,14 @@ async def host_virtualization():
     if not qemu.is_file():
         raise EnvironmentError(f"QEMU executable was not found: {qemu}")
 
-    accelerator = "whpx" if key == "windows" else "kvm"
-    if key == "linux" and not os.access("/dev/kvm", os.R_OK | os.W_OK):
-        accelerator = "tcg"
+    candidates = {"Windows": "whpx", "Linux": "kvm"}
+    accelerator = candidates.get(key)
+    if accelerator is None:
+        _accelerator = "tcg"
+        return _accelerator
 
-    if accelerator != "tcg":
+    process = None
+    try:
         process = await asyncio.create_subprocess_exec(
             str(qemu), "-accel", accelerator, "-machine", "none", "-display", "none", "-S",
             stdout=asyncio.subprocess.DEVNULL,
@@ -120,20 +129,24 @@ async def host_virtualization():
         )
         try:
             await asyncio.wait_for(process.wait(), timeout=0.75)
-            accelerator = "tcg"
         except asyncio.TimeoutError:
-            pass
-        finally:
-            if process.returncode is None:
-                process.terminate()
-                with contextlib.suppress(asyncio.TimeoutError, ProcessLookupError):
-                    await asyncio.wait_for(process.wait(), timeout=2)
-            if process.returncode is None:
-                process.kill()
-                with contextlib.suppress(ProcessLookupError):
-                    await process.wait()
+            # A running QEMU accepted and initialized the accelerator.
+            _accelerator = accelerator
+            return _accelerator
+    except (OSError, asyncio.SubprocessError):
+        # Starting the probe itself failed, so retain QEMU's portable fallback.
+        pass
+    finally:
+        if process and process.returncode is None:
+            process.terminate()
+            with contextlib.suppress(asyncio.TimeoutError, ProcessLookupError):
+                await asyncio.wait_for(process.wait(), timeout=2)
+        if process and process.returncode is None:
+            process.kill()
+            with contextlib.suppress(ProcessLookupError):
+                await process.wait()
 
-    _accelerator = accelerator
+    _accelerator = "tcg"
     return _accelerator
 
 
@@ -203,8 +216,8 @@ class QemuEnvironment:
         """
         await self.create_overlay()
         _, qemu = self.qemu_paths()
-        memory = max(1, host_memory_mb() // config.concurrent_runs + 1)
-        cpus = max(1, (os.cpu_count() or 1) // config.concurrent_runs + 1)
+        memory = max(1, host_memory_mb() // (config.concurrent_runs + 1)) # ? Allocate less memory to keep the host responsive when running multiple environments
+        cpus = max(1, (os.cpu_count() or 1) // config.concurrent_runs)
         drive = self.overlay_path.resolve().as_posix()
 
         self.process = await asyncio.create_subprocess_exec(
@@ -280,7 +293,7 @@ class QemuEnvironment:
             self.consume_serial_line(f"{line}\n")
 
     def consume_serial_line(self, line):
-        if "qemu-system-x86_64" in line: # and ": warning:" in line:
+        if "qemu-system-x86_64" in line or "Time jumped backwards" in line:
             return
         # ? Ignore QEMU-related warnings that are not relevant to the user
 
