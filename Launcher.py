@@ -4,13 +4,9 @@ import subprocess
 import time
 import sys
 
-ROOT = Path(__file__).resolve().parent
-
 # ? Set up selected language images before either interface can start a run
 LanguageSupport.ensure_language_support_images()
-
-# ? On Linux this import performs the QEMU startup compatibility check
-from Sequence import Environment
+ROOT = Path(__file__).resolve().parent
 
 def choose_interface():
     """Ask which interface(s) should be launched.

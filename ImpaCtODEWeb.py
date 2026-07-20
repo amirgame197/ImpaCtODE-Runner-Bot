@@ -1,13 +1,13 @@
 from flask_socketio import SocketIO, emit, join_room
 from flask import Flask, render_template, session
-from Sequence import Runner
 
+from Sequence import Runner
 import concurrent.futures
+import threading
 import asyncio
 import config
 import uuid
 import re
-import threading
 
 SECRET_KEY = config.web_secret_key
 MAX_CONTENT_LENGTH = config.web_max_content_length
