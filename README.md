@@ -1,5 +1,7 @@
 <img width="1280" height="640" alt="impactodebanner" src="https://github.com/user-attachments/assets/5f6e6da5-b68b-49eb-85f4-eb5d6a14b731" />
 
+[Project Gallery](.gallery/README.md)
+
 ## Run code from Telegram or a local web interface inside a fresh, disposable Linux virtual machine.
 
 **ImpaCtODE** uses AI to inspect the submitted code, plans the commands and dependency installation it needs, then runs everything in an isolated QEMU virtual machine.
