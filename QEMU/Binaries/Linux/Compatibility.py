@@ -12,7 +12,7 @@ import shutil
 import subprocess
 
 
-BUNDLED_BIN = Path(__file__).resolve().parents[1] / "Binaries" / "Linux" / "bin"
+BUNDLED_BIN = Path(__file__).resolve().parents[1] / "Linux" / "bin"
 QEMU_IMG = BUNDLED_BIN / "qemu-img"
 QEMU_SYSTEM = BUNDLED_BIN / "qemu-system-x86_64"
 HOST_DEPENDENCY_PACKAGES = ("qemu-system-x86", "qemu-utils")
