@@ -24,6 +24,15 @@ Currently, the overlay backing image's path is relative, so moving `base.qcow2` 
 
 Make sure your current working directory is this directory.
 
+> [!IMPORTANT]
+> Linux uses the QEMU packages installed through `apt`.
+> When the bot starts, it checks QEMU and automatically runs the installation if it is missing or cannot start. To install it manually instead:
+>
+> ```bash
+> sudo apt-get update
+> sudo apt-get install -y qemu-system-x86 qemu-utils
+> ```
+
 ### Windows
 
 ```bat
@@ -37,19 +46,12 @@ Overlays\NEW-OVERLAY.qcow2
 ### Linux
 
 ```bash
-Binaries/Linux/bin/qemu-img create \
+qemu-img create \
 -f qcow2 \
 -b ../base.qcow2 \
 -F qcow2 \
 Overlays/NEW-OVERLAY.qcow2
 ```
-
-> [!NOTE]
-> On Linux, you may need to make `qemu-img` executable before using it:
->
-> ```bash
-> chmod +x Binaries/Linux/bin/qemu-img
-> ```
 
 ---
 
@@ -108,7 +110,7 @@ Binaries\Windows\qemu-system-x86_64.exe ^
 ## Linux
 
 ```bash
-Binaries/Linux/bin/qemu-system-x86_64 \
+qemu-system-x86_64 \
 -m 1024 \
 -smp 2 \
 -drive file=NEW-OVERLAY.qcow2,if=virtio,format=qcow2 \
@@ -161,7 +163,7 @@ Overlays\SequenceDisposal\run-temp-0001.qcow2
 ### Linux
 
 ```bash
-Binaries/Linux/bin/qemu-img create \
+qemu-img create \
 -f qcow2 \
 -b ../NEW-OVERLAY.qcow2 \
 -F qcow2 \

@@ -130,7 +130,7 @@ That is all. Open your bot in Telegram, send `/start`, then use `/run` with code
 
 [QEMU](https://www.qemu.org/) is the virtual-machine emulator that keeps submitted code separate from the computer running the bot. ImpaCtODE uses QCOW2 overlays rather than copying a full disk for every run: a base Debian image sits at the bottom, a language image builds on it, and each execution receives one temporary overlay of its own.
 
-The project includes QEMU binaries for Windows and Linux. Hardware virtualization should be available and enabled for the best performance: Windows uses WHPX and Linux uses KVM. Software emulation is possible, but noticeably slower.
+The project includes bundled QEMU binaries for Windows. On Linux, it uses Debian's `qemu-system-x86` and `qemu-utils` packages. The bot checks for them at startup and automatically installs them with `apt` when it runs as root; otherwise, the manual command is in the [QEMU README](QEMU/README.md). Hardware virtualization should be available and enabled for the best performance: Windows uses WHPX and Linux uses KVM. Software emulation is possible, but noticeably slower.
 
 The full image layout, manual QEMU commands, and overlay-creation instructions are in the [QEMU README](QEMU/README.md). It is worth reading before modifying VM images or adding runtimes.
 

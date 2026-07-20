@@ -1,9 +1,4 @@
-"""Check that the bundled Linux QEMU binaries can start.
-
-The executables stay bundled, but their libraries must come from the host
-distribution. In particular, a bundled ``libc.so.6`` cannot safely be loaded
-through ``LD_LIBRARY_PATH``.
-"""
+"""Ensure the Debian-provided QEMU executables are available and usable."""
 
 from dataclasses import dataclass
 from pathlib import Path
@@ -12,10 +7,9 @@ import shutil
 import subprocess
 
 
-BUNDLED_BIN = Path(__file__).resolve().parents[1] / "Linux" / "bin"
-QEMU_IMG = BUNDLED_BIN / "qemu-img"
-QEMU_SYSTEM = BUNDLED_BIN / "qemu-system-x86_64"
-HOST_DEPENDENCY_PACKAGES = ("qemu-system-x86", "qemu-utils")
+QEMU_IMG = Path("/usr/bin/qemu-img")
+QEMU_SYSTEM = Path("/usr/bin/qemu-system-x86_64")
+QEMU_PACKAGES = ("qemu-system-x86", "qemu-utils")
 COMMAND_TIMEOUT_SECONDS = 30
 APT_TIMEOUT_SECONDS = 300
 
@@ -126,10 +120,6 @@ def _run_apt(arguments, description):
     try:
         result = subprocess.run(
             (apt_get, *arguments),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            errors="replace",
             timeout=APT_TIMEOUT_SECONDS,
             check=False,
             env=environment,
@@ -139,26 +129,27 @@ def _run_apt(arguments, description):
         return False
 
     if result.returncode:
-        _alert(f"WARNING: apt-get failed with exit code {result.returncode}: {_output_text(result.stdout)}")
+        _alert(f"WARNING: apt-get failed with exit code {result.returncode}. See the apt output above.")
         return False
+    _alert("apt-get completed successfully.")
     return True
 
 
-def _install_host_dependencies():
+def _install_qemu():
     if hasattr(os, "geteuid") and os.geteuid() != 0:
         _alert(
-            "WARNING: automatic host-dependency installation needs root privileges. "
+            "WARNING: automatic QEMU installation needs root privileges. "
             "Run 'sudo apt-get update && sudo apt-get install -y qemu-system-x86 qemu-utils'."
         )
         return False
 
-    updated = _run_apt(("update",), "The bundled QEMU binary did not start; updating apt package lists...")
+    updated = _run_apt(("update",), "QEMU did not start; updating apt package lists...")
     if not updated:
         _alert("WARNING: apt update failed; trying the install with the existing package cache.")
 
     return _run_apt(
-        ("install", "-y", *HOST_DEPENDENCY_PACKAGES),
-        "Installing Debian packages that provide QEMU's host-compatible dependencies...",
+        ("install", "-y", *QEMU_PACKAGES),
+        "Installing Debian QEMU packages (qemu-system-x86 and qemu-utils)...",
     )
 
 
@@ -170,25 +161,26 @@ def ensure_qemu_available():
 
     available, detail = _safe_test_qemu()
     if available:
-        _alert("Bundled QEMU passed its startup check.")
+        _alert("System QEMU passed its startup check.")
         _result = QemuCompatibilityResult(True)
         return _result
 
-    _alert(f"Bundled QEMU startup check failed: {detail}")
+    _alert(f"System QEMU startup check failed: {detail}")
     try:
-        _install_host_dependencies()
+        _install_qemu()
     except Exception as error:
         _alert(f"WARNING: automatic QEMU installation failed unexpectedly: {error}")
 
     available, detail = _safe_test_qemu()
     if available:
-        _alert("The required host packages were installed and bundled QEMU passed its startup check.")
+        _alert("System QEMU was installed and passed its startup check.")
         _result = QemuCompatibilityResult(True)
         return _result
 
     _alert(
-        "WARNING: the bundled QEMU binary cannot start. The bot will continue running, but VM executions will not work. "
-        "Install its host-compatible dependencies with 'apt-get update && apt-get install -y qemu-system-x86 qemu-utils'. "
+        "WARNING: system QEMU is unavailable. The bot will continue running, but VM executions will not work. "
+        "It is installed automatically with apt when possible; otherwise run "
+        "'apt-get update && apt-get install -y qemu-system-x86 qemu-utils'. "
         f"Last check: {detail}"
     )
     _result = QemuCompatibilityResult(False, detail)

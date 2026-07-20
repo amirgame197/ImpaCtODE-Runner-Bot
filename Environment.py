@@ -7,7 +7,6 @@ import base64
 import ctypes
 import config
 import shlex
-import stat
 import uuid
 import os
 
@@ -19,21 +18,6 @@ class EnvironmentError(Exception):
 
 class EnvironmentTimeoutError(EnvironmentError):
     pass
-
-
-def fix_qemu_permissions(folder):
-    if platform.system() == "Linux":
-        for file in Path(folder).iterdir():
-            if file.is_file():
-                try:
-                    file.chmod(file.stat().st_mode | stat.S_IEXEC)
-                except OSError as error:
-                    print(f"[QEMU compatibility] WARNING: could not mark {file} executable: {error}", flush=True)
-
-
-for qemu_executable in config.qemu_executable["Linux"].values():
-    if Path(qemu_executable).is_file():
-        fix_qemu_permissions(Path(qemu_executable).parent)
 
 
 if platform.system() == "Linux":
@@ -55,12 +39,6 @@ def platform_key():
     if key not in config.qemu_executable:
         raise EnvironmentError(f"QEMU is not configured for {platform.system()}.")
     return key
-
-
-def qemu_firmware_args():
-    if platform.system() != "Linux":
-        return []
-    return ["-L", str(config.qemu_executable["Linux"]["data"])]
 
 
 def host_memory_mb():
@@ -286,7 +264,6 @@ class QemuEnvironment:
         try:
             self.process = await asyncio.create_subprocess_exec(
                 str(qemu),
-                *qemu_firmware_args(),
                 "-no-reboot",
                 "-m", str(memory),
                 "-smp", str(cpus),
