@@ -1,3 +1,6 @@
 Telethon @ https://codeberg.org/Lonami/Telethon/archive/v1.zip
 python-dotenv
 openai
+Flask
+Flask-SocketIO
+simple-websocket

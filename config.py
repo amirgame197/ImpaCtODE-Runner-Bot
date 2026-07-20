@@ -9,12 +9,6 @@ ENV_FILE = ROOT / ".env"
 if ENV_FILE.exists():
     load_dotenv(ENV_FILE)
 
-# # #################### Basic Bot Configuration #######################################################
-
-bot_username = "Automatic" # ? These will change on startup after a successful auth
-bot_name = "Automatic"     # ? ^^^^^^^^^^^^^^^^^^^^
-bot_id = "Automatic"       # ? ^^^^^^^^^^^^^^^^^^^^
-
 def get_environment_variable(name):
     """Get an environment variable value, prompting user if not set and saving to .env.
     """
@@ -38,9 +32,17 @@ def get_environment_variable(name):
     
     return variable
 
-token = get_environment_variable("IMPACTODE_TELEGRAM_BOT_TOKEN")
-app_id = get_environment_variable("IMPACTODE_TELEGRAM_APP_ID")
-app_hash = get_environment_variable("IMPACTODE_TELEGRAM_APP_HASH")
+# # #################### Basic Bot Configuration #######################################################
+
+bot_username = "Automatic" # ? These will change on startup after a successful auth
+bot_name = "Automatic"     # ? ^^^^^^^^^^^^^^^^^^^^
+bot_id = "Automatic"       # ? ^^^^^^^^^^^^^^^^^^^^
+
+token = "Automatic"        # ? These will change before bot's startup attempt
+app_id = "Automatic"       # ? ^^^^^^^^^^^^^^^^^^^^
+app_hash = "Automatic"     # ? ^^^^^^^^^^^^^^^^^^^^
+
+web_secret_key = get_environment_variable("IMPACTODE_WEB_SECRET_KEY")
 
 # # #################### Bot Responses Configuration ###################################################
 
@@ -97,8 +99,22 @@ Failed runs may trigger an automatic environment repair attempt before possible 
 openai_base_url = "https://api.mistral.ai/v1"
 openai_api_key = get_environment_variable("IMPACTODE_OPENAI_API_KEY")
 
-output_refresh_interval = 3 
+telegram_output_refresh_interval = 3
 # ? Seconds between Telegram message edits when showing the environment transcript
+
+# # #################### Web Interface Configuration ##################################################
+
+web_listen_ip = "0.0.0.0"
+# ? Interface address. Use 127.0.0.1 when the web interface should stay local-only
+
+web_listen_port = 1991
+# ? Interface port
+
+web_max_content_length = 1024 * 1024
+# ? Maximum size, in bytes, of an incoming web request or Socket.IO payload
+
+web_output_limit = 64 * 1024
+# ? Latest environment transcript characters retained and sent to each web run view
 
 # # #################### QEMU Configuration ######################################################
 
@@ -126,8 +142,8 @@ qemu_ready_settle_seconds = 3
 telegram_output_limit = 3584
 # ? The latest characters of the environment transcript shown in the continuously edited Telegram message
 
-captured_environment_output_limit = 4096
-# ? Maximum latest environment transcript retained on the bot host to protect host memory
+captured_environment_output_limit = max(4096, web_output_limit)
+# ? Maximum latest environment transcript retained on the host; Telegram still uses telegram_output_limit
 
 sequence_max_tokens = 2048
 # ? Default maximum response size for structured AI sequence steps

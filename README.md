@@ -1,6 +1,6 @@
 <img width="1280" height="640" alt="impactodebanner" src="https://github.com/user-attachments/assets/5f6e6da5-b68b-49eb-85f4-eb5d6a14b731" />
 
-## Run code from Telegram inside a fresh, disposable Linux virtual machine.
+## Run code from Telegram or a local web interface inside a fresh, disposable Linux virtual machine.
 
 **ImpaCtODE** uses AI to inspect the submitted code, plans the commands and dependency installation it needs, then runs everything in an isolated QEMU virtual machine.
 
@@ -11,7 +11,7 @@ Try the public demo: [**@ImpaCtODE_Bot**](https://t.me/ImpaCtODE_Bot).
 
 ## What it does
 
-ImpaCtODE is a Telegram bot with two main commands:
+ImpaCtODE provides a Telegram bot and a real-time web interface. The Telegram bot has two main commands:
 
 - `/start` - shows a welcome message and quick reference.
 - `/run` - runs code included in the message, or in a message you reply to.
@@ -25,11 +25,11 @@ When a run starts, the bot:
 
 Each sandbox normally has **1 GB RAM**, **2 CPU cores**, and a maximum lifetime of **15 minutes**. Failed runs can receive an automatic environment-repair attempt before the bot shows possible code fixes. The VM is destroyed after the run, so it does not modify your workstation or the next run's environment.
 
-The bot is built with Python, OpenAI-compatible SDK, [Telethon](https://codeberg.org/Lonami/Telethon) and bundled QEMU binaries for Windows and Linux.
+ImpaCtODE is built with Python, an OpenAI-compatible SDK, [Telethon](https://codeberg.org/Lonami/Telethon), Flask-SocketIO with native threading, and bundled QEMU binaries for Windows and Linux.
 
 ## AI assistance
 
-This project was built with GPT-5.6's help, especially around the environment-handling parts of the codebase. It helped me design and implement the QEMU execution system, including launching and controlling the VM through Python's async subprocess handling with `asyncio.create_subprocess_exec`.
+This project was built with GPT-5.6's help, especially around the web interface and environment-handling parts of the codebase. It helped design and implement the QEMU execution system, including launching and controlling the VM through Python's async subprocess handling with `asyncio.create_subprocess_exec`.
 
 It also helped with the structured AI response handling used for code detection and execution planning, where responses follow a JSON schema so they are predictable and ready to parse. The project design, decisions, testing, and integration were done by me.
 
@@ -107,24 +107,30 @@ IMPACTODE_TELEGRAM_BOT_TOKEN=your_bot_token
 IMPACTODE_TELEGRAM_APP_ID=your_app_id
 IMPACTODE_TELEGRAM_APP_HASH=your_app_hash
 IMPACTODE_OPENAI_API_KEY=your_api_key
+IMPACTODE_WEB_SECRET_KEY=a-long-random-secret-value
 ```
 
 Get the Telegram bot token from [@BotFather](https://t.me/BotFather). Create a Telegram application at [my.telegram.org](https://my.telegram.org) (you can fill the application forms with any value) to get the app ID (a numerical value) and app hash (a long string). Keep all of these values private: they control access to your bot and Telegram application.
+
+Use a unique random value for `IMPACTODE_WEB_SECRET_KEY`; Flask uses it to sign browser sessions.
 
 By default, the AI requests use the [Mistral API](https://console.mistral.ai/) through its OpenAI-compatible endpoint. You can create a free Mistral account and get an API key there. If you use another OpenAI-compatible provider instead, put its key in `IMPACTODE_OPENAI_API_KEY` and change `openai_base_url` in [`config.py`](config.py) to that provider's base URL. You may also change the model names there if your provider uses different ones.
 
 > [!IMPORTANT]
 > As of right now, free mistral accounts support `codestral-latest` model so you can use their inference free at a monthly quota, but this can change any time.
 
-### Step 5: Start the bot
+### Step 5: Start Python
 
 ```bash
-python ImpaCtODEBot.py
+python Launcher.py
 ```
 
-On the first start, the project checks for the base VM image and the enabled language overlays. If an image is missing, it asks whether it should download and extract it automatically. Choose `a` to download all missing enabled language images.
+The launcher first checks for the base VM image and enabled language overlays. If an image is missing, it asks whether it should download and extract it automatically. Choose `a` to download all missing enabled language images. It then lets you start the Telegram bot, the web interface, or both. Open `http://localhost:1991` on the host machine; by default the web listener binds to all network interfaces.
 
-That is all. Open your bot in Telegram, send `/start`, then use `/run` with code in the message or by replying to a code message.
+That is all. Open the interface you selected: in Telegram, send `/start` and use `/run`. In the browser, create a run from the main page and follow its live output.
+
+> [!Note]
+> You can reverse proxy the interface using Nginx or Apache to enable HTTPS connections or accessing it through a domain
 
 ## QEMU and VM images
 
@@ -141,7 +147,7 @@ Automatic installation is the easy option, but manual installation works too:
 1. Download the image archives from the repository's [Releases page](https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases).
 2. Extract `base.qcow2` into `QEMU/`.
 3. Extract each language `.qcow2` file into `QEMU/Overlays/`, preserving its expected filename - for example, `python-base.qcow2` or `javascript-base.qcow2`.
-4. Start the bot normally.
+4. Start ImpaCtODE normally through `Launcher.py`.
 
 Do not move `base.qcow2` after creating overlays. Their backing-file paths are relative (`../base.qcow2`), so an overlay will not boot if it can no longer find its base image in parent directory.
 
@@ -168,7 +174,7 @@ A language profile is mostly a config edit plus an overlay containing its runtim
 
 ## Configuration notes
 
-`config.py` also contains the run timeout, concurrency limit, memory/CPU behavior, QEMU paths, model settings, and Telegram output limits. The default concurrent-run setting affects how VM resources are allocated, so adjust it carefully on lower-powered systems.
+`config.py` also contains the run timeout, concurrency limit, memory/CPU behavior, QEMU paths, model settings, Telegram output limits, and web listener settings. The default concurrent-run setting affects how VM resources are allocated, so adjust it carefully on lower-powered systems.
 
 ## License
 

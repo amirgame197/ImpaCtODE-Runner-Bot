@@ -126,7 +126,7 @@ class QemuEnvironment:
     """One disposable QEMU overlay controlled through the guest serial console.
     """
 
-    def __init__(self, language, language_overlay):
+    def __init__(self, language, language_overlay, output_observer=None):
         self.language = language
         self.language_overlay = Path(language_overlay)
         self.overlay_path = None
@@ -135,6 +135,7 @@ class QemuEnvironment:
         self.output = ""
         self.timed_out = False
         self.deadline = None
+        self.output_observer = output_observer
 
         self.ready = asyncio.Event()
         self.command_done = None
@@ -161,6 +162,16 @@ class QemuEnvironment:
 
     def append_output(self, text):
         self.output = (self.output + text)[-config.captured_environment_output_limit:]
+        if self.output_observer:
+            try:
+                self.output_observer({
+                    "type": "environment_output",
+                    "stream": "guest",
+                    "text": text,
+                    "output": self.output,
+                })
+            except Exception:
+                pass
 
     def append_qemu_output(self, text):
         self.qemu_output = (self.qemu_output + text)[-config.captured_environment_output_limit:]

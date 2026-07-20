@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#151515">
+    <meta name="description" content="Run code in a disposable environment.">
+    <title>ImpaCtODE Runner</title>
+    <link rel="stylesheet" href="/static/css/index.style.css">
+    
+    <script src="/static/libs/socket.io.min.js"></script>
+    <script src="/static/js/index.app.js" defer></script>
+</head>
+<body>
+    <div class="app-shell">
+        <main class="app-main">
+            <nav class="tab-bar" aria-label="Run tabs">
+                <div id="tab-list" class="tab-list" role="tablist" aria-label="Open pages"></div>
+            </nav>
+            <section id="workspace" class="workspace" aria-live="polite"></section>
+        </main>
+
+        <header class="footer">
+            <div class="footer-actions">
+                <span id="connection-status" class="connection-status is-connecting" role="status" aria-live="polite">
+                    <span class="status-dot"></span>
+                    <span class="connection-label">Connecting</span>
+                </span>
+                <button id="debug-logs-toggle" class="debug-logs-button" type="button" aria-label="Debug log" title="Debug log">
+                    <span class="debug-logs-label">Logs</span>
+                </button>
+                <button id="theme-toggle" class="icon-button theme-toggle" type="button" aria-label="Switch to light mode" title="Switch color theme">
+                    <span class="theme-icon theme-icon-dark" aria-hidden="true">☾</span>
+                    <span class="theme-icon theme-icon-light" aria-hidden="true">☀</span>
+                </button>
+            </div>
+        </header>
+    </div>
+
+    <svg class="liquid-svg" aria-hidden="true" focusable="false">
+        <filter
+            id="ass-distortion"
+            x="0%"
+            y="0%"
+            width="100%"
+            height="100%"
+            filterUnits="objectBoundingBox"
+        >
+            <feTurbulence
+                type="fractalNoise"
+                baseFrequency="0.001 0.001"
+                numOctaves="1"
+                seed="5"
+                result="turbulence"
+            />
+            <!-- Seeds: 14, 17, -->
+            <feComponentTransfer in="turbulence" result="mapped">
+                <feFuncR type="gamma" amplitude="1" exponent="10" offset="0.5" />
+                <feFuncG type="gamma" amplitude="0" exponent="1" offset="0" />
+                <feFuncB type="gamma" amplitude="0" exponent="1" offset="0.5" />
+            </feComponentTransfer>
+            <feGaussianBlur in="turbulence" stdDeviation="3" result="softMap" />
+            <feSpecularLighting
+                in="softMap"
+                surfaceScale="5"
+                specularConstant="1"
+                specularExponent="100"
+                lighting-color="white"
+                result="specLight"
+            >
+                <fePointLight x="-200" y="-200" z="300" />
+            </feSpecularLighting>
+            <feComposite
+                in="specLight"
+                operator="arithmetic"
+                k1="0"
+                k2="1"
+                k3="1"
+                k4="0"
+                result="litImage"
+            />
+            <feDisplacementMap
+                in="SourceGraphic"
+                in2="softMap"
+                scale="150"
+                xChannelSelector="R"
+                yChannelSelector="G"
+            />
+        </filter>
+    </svg>
+</body>
+</html>

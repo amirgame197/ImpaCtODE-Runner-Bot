@@ -1,23 +1,21 @@
-from Environment import EnvironmentError, QemuEnvironment
 from telethon.tl.types import *
 from telethon import *
 
-from OpenAI import TextGen
-import LanguageSupport
+from Sequence import Runner
 import unicodedata
 import contextlib
 import asyncio
 import random
 import config
 import html
-import json
 import sys
 import re
 
-LanguageSupport.ensure_language_support_images()
+config.token = config.get_environment_variable("IMPACTODE_TELEGRAM_BOT_TOKEN")
+config.app_id = config.get_environment_variable("IMPACTODE_TELEGRAM_APP_ID")
+config.app_hash = config.get_environment_variable("IMPACTODE_TELEGRAM_APP_HASH")
 
 client = TelegramClient('impactode', config.app_id, config.app_hash, connection_retries=None, retry_delay=15).start(bot_token=config.token) # token
-_run_queue = asyncio.Semaphore(config.concurrent_runs)
 _active_sequences = {}
 
 # # #################### Input Handling ################################################################
@@ -184,19 +182,16 @@ async def running_sequence(event, message_text, owner_id=None):
     sequence_key = (response_message.chat_id, response_message.id)
     _active_sequences[sequence_key] = asyncio.current_task()
 
-    environment = None
-    timeout_task = None
     refresh_task = None
     status_messages = []
     predicted_steps = len(config.main_sequence) + 7
     latest_response = ""
     guidance = ""
-    retry_feedback = ""
+    environment_output = ""
     sequence_ended = False
 
     def make_response_message():
-        output = environment.output if environment else ""
-        output = re.sub(r"\x1B(?:[@-_][0-?]*[ -/]*[@-~]|\[[0-?]*[ -/]*[@-~])", "", output)
+        output = re.sub(r"\x1B(?:[@-_][0-?]*[ -/]*[@-~]|\[[0-?]*[ -/]*[@-~])", "", environment_output)
         output = output.replace("\x00", "")
         if len(output) > config.telegram_output_limit:
             truncation_message = "[Earlier environment output hidden. Showing the latest output.]\n\n"
@@ -247,310 +242,41 @@ async def running_sequence(event, message_text, owner_id=None):
 
     async def refresh_output():
         while True:
-            await asyncio.sleep(config.output_refresh_interval)
+            await asyncio.sleep(config.telegram_output_refresh_interval)
             await update_response()
 
-    async def timeout_environment():
-        await asyncio.sleep(config.env_timeout)
-        if environment and environment.is_running:
-            await update_response("❌️ Environment timeout reached. Destroying the VM.", end_sequence=True)
-            await environment.destroy(timed_out=True)
+    async def receive_runner_update(update):
+        # ? Runner sends neutral updates and the bot keeps its existing rich-message UI
+        nonlocal environment_output, guidance, refresh_task
 
-    try:
-        if _run_queue.locked():
-            await update_response(f"🔄 All execution slots ({config.concurrent_runs}) are busy. Run is queued.", predicted_add=1)
-
-        async with _run_queue:
-            await update_response("[x] ==Execution started.==")
+        if update["type"] == "started":
             refresh_task = asyncio.create_task(refresh_output())
 
-            for attempt in range(1, config.max_attempts + 1):
-                await update_response(f"[x] ==Starting attempt {attempt} of {config.max_attempts}.==")
-                sequence_data = await run_main_sequence(message_text, update_response)
-                if sequence_data is None:
-                    return
-                sequence_data["retry_feedback"] = retry_feedback
+        elif update["type"] == "environment":
+            environment_output = update["output"]
 
-                language_config = next(
-                    (step for step in sequence_data["language_steps"] if "overlay_path" in step),
-                    None,
-                )
-                if language_config is None:
-                    raise EnvironmentError("Language sequence has no environment configuration.")
+        elif update["type"] == "guidance":
+            guidance = update["guidance"]
 
-                if environment is None:
-                    environment_status = await update_response("🔄 Launching disposable environment.")
-                    environment = QemuEnvironment(sequence_data["language"], language_config["overlay_path"])
-                    await environment.start()
-                    timeout_task = asyncio.create_task(timeout_environment())
-                    await update_response("[x] ==Environment is ready.==", replace_index=environment_status)
+        elif update["type"] == "status":
+            return await update_response(
+                update["message"],
+                replace_index=update["replace_index"],
+                predicted_add=update["predicted_add"],
+                end_sequence=update["end_sequence"],
+            )
 
-                result, commands = await run_language_sequence(
-                    environment,
-                    sequence_data,
-                    update_response,
-                    attempt,
-                )
-                if result is not None and result.exit_code == 0:
-                    await update_response("[x] ==Code execution completed successfully.==", end_sequence=True)
-                    return
-
-                retry, guidance, retry_feedback = await run_post_sequence(
-                    environment,
-                    sequence_data,
-                    result,
-                    commands,
-                    update_response,
-                    attempt,
-                )
-                if not retry:
-                    if guidance:
-                        await update_response("❌️ ==Run failed. See possible fixes below.==", end_sequence=True)
-                    else:
-                        await update_response("❌️ ==Run failed and cannot be retried automatically.==", end_sequence=True)
-                    return
-
-    except asyncio.CancelledError:
-        await update_response("❌️ ==Run aborted by owner.==", end_sequence=True)
-    
-    except Exception as e:
-        await update_response(f"❌️ ==Sequence aborted:== `{e}`", end_sequence=True)
+    try:
+        await Runner.running_sequence(message_text, receive_runner_update)
 
     finally:
-        for task in (refresh_task, timeout_task):
-            if task is not None:
-                task.cancel()
-                with contextlib.suppress(asyncio.CancelledError):
-                    await task
+        if refresh_task is not None:
+            refresh_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await refresh_task
 
-        if environment is not None:
-            await environment.destroy()
         _active_sequences.pop(sequence_key, None)
         await update_response()
-
-
-def get_step_fields(step):
-    """Return the configured JSON response fields for a sequence step.
-    """
-    schema = step.get("response_format", {}).get("json_schema", {}).get("schema", {})
-    return schema.get("properties", {})
-
-
-async def generate_step(step, sequence_data):
-    """Run one AI sequence step and return its JSON response.
-    """
-    response = await TextGen.generate(
-        model_name=step["model_name"],
-        messages=[{
-            "role": "user",
-            "content": json.dumps(sequence_data, ensure_ascii=False, indent=2),
-        }],
-        system_prompt=step["system_prompt"],
-        max_tokens=step.get("max_tokens", config.sequence_max_tokens),
-        temperature=step.get("temperature", 0),
-        response_format=step.get("response_format", {"type": "text"}),
-    )
-
-    response = response.strip()
-    if response.startswith("```"):
-        response = "\n".join(response.splitlines()[1:-1]).strip()
-    return json.loads(response)
-
-
-async def run_steps(steps, sequence_data, update_response):
-    """Run configured AI steps in order and keep their results in one dictionary.
-    """
-    for step in steps:
-        if "model_name" not in step:
-            continue
-
-        await update_response(f"🔘 {step['description']}")
-        response = await generate_step(step, sequence_data)
-        sequence_data.update(response)
-
-        # The main sequence can stop as soon as a configured result says there is nothing to run.
-        if response.get("contains") is False or response.get("code_parts") == "":
-            return None
-
-    return sequence_data
-
-
-async def run_commands(environment, commands, update_response):
-    """Run generated guest commands in order, stopping at the first non-zero exit code.
-    """
-    await update_response(predicted_add=1 if commands else 0)
-    result = None
-    command_status = None
-    for number, command in enumerate(commands, start=1):
-        if not isinstance(command, str) or not command.strip():
-            continue
-
-        command_status = await update_response(
-            f"🔘 Running command {number} of {len(commands)}.",
-            replace_index=command_status,
-        )
-        result = await environment.execute(command)
-        if result.exit_code != 0:
-            await update_response(
-                f"⚠️ command {number} exited with status {result.exit_code}.",
-                replace_index=command_status,
-            )
-            return result
-        elif number == len(commands):
-            await update_response(
-                f"[x] Running command {number} of {len(commands)}.",
-                replace_index=command_status,
-            )
-
-    return result
-
-
-async def run_main_sequence(message_text, update_response):
-    """Use config.main_sequence to detect, extract, and identify submitted code.
-    """
-    sequence_data = await run_steps(
-        config.main_sequence,
-        {"message_text": message_text},
-        update_response,
-    )
-    if sequence_data is None:
-        await update_response("❌️ ==No executable code was found. Run was aborted.==", end_sequence=True)
-        return None
-
-    language = sequence_data.get("language")
-    language_steps = config.languages_sequence.get(language)
-    if language == "None" or not language_steps or not language_steps[0].get("overlay_path").is_file():
-        await update_response("❌️ ==Code language is unsupported or is not implemented yet.==", end_sequence=True)
-        return None
-
-    code = sequence_data.get("code_parts", "")
-    if not code:
-        await update_response("❌️ ==No executable code was found. Run was aborted.==", end_sequence=True)
-        return None
-
-    return {
-        "code": code,
-        "custom_instructions": sequence_data.get("custom_instructions", ""),
-        "language": language,
-        "language_steps": language_steps,
-    }
-
-
-async def run_language_sequence(environment, sequence_data, update_response, attempt):
-    """Write the code, collect guest details, generate commands, and run them.
-    """
-    language_config = next(
-        (step for step in sequence_data["language_steps"] if "overlay_path" in step),
-        None,
-    )
-    if language_config is None:
-        raise EnvironmentError("Llanguage sequence has no environment configuration.")
-
-    file_name = language_config["file_name"]
-    code_status = await update_response(
-        f"[ ] Writing extracted {sequence_data['language']} code to {file_name}."
-    )
-    guest_file = await environment.write_code_file(file_name, sequence_data["code"])
-    await update_response(
-        f"[x] Writing extracted {sequence_data['language']} code to {file_name}.",
-        replace_index=code_status,
-    )
-
-    environment_status = await update_response("[ ] Collecting guest environment details.")
-    environment_data = (await environment.execute(config.environment_details_command)).output
-    await update_response("[x] Collected guest environment details.", replace_index=environment_status)
-
-    planner_data = {
-        "attempt": attempt,
-        "language": sequence_data["language"],
-        "file_name": file_name,
-        "guest_file": guest_file,
-        "code": sequence_data["code"],
-        "custom_instructions": sequence_data["custom_instructions"],
-        "environment": environment_data,
-        "retry_feedback": sequence_data.get("retry_feedback", ""),
-    }
-
-    commands = []
-    planner_steps = sum("model_name" in step for step in sequence_data["language_steps"])
-    await update_response(predicted_add=max(0, planner_steps - 1))
-    for step in sequence_data["language_steps"]:
-        if "model_name" not in step:
-            continue
-
-        await update_response(f"🔘 {step['description']}")
-        response = await generate_step(step, planner_data)
-        planner_data.update(response)
-        commands.extend(response.get("commands", []))
-
-    if not commands:
-        raise EnvironmentError("The language sequence did not return any execution commands.")
-
-    return await run_commands(environment, commands, update_response), commands
-
-
-async def run_post_sequence(environment, sequence_data, failure, commands, update_response, attempt):
-    """Run config.post_sequence and return whether the code should be attempted again.
-    """
-    post_data = {
-        "code": sequence_data["code"],
-        "custom_instructions": sequence_data["custom_instructions"],
-        "commands": commands,
-        "failed_command": failure.command,
-        "exit_code": failure.exit_code,
-        "environment_output": environment.output[-config.telegram_output_limit:],
-    }
-    guidance = ""
-    retry_feedback = ""
-
-    for step in config.post_sequence:
-        if step.get("type") == "local":
-            if failure.exit_code == 0:
-                return False, guidance, retry_feedback
-            await update_response(
-                f"❌️ ==Execution failed with exit status {failure.exit_code}. Starting post sequence.==",
-                predicted_add=3,
-            )
-            continue
-
-        fields = get_step_fields(step)
-        if "commands" in fields and (
-            not post_data.get("environment_related") or attempt >= config.max_attempts
-        ):
-            continue
-
-        await update_response(f"🔘 {step['description']}")
-        response = await generate_step(step, post_data)
-        post_data.update(response)
-        retry_feedback = response.get("retry_feedback", retry_feedback)
-
-        if "commands" in response:
-            repair = await run_commands(environment, response["commands"], update_response)
-            repair_succeeded = repair is None or repair.exit_code == 0
-            if (
-                repair_succeeded
-                and response.get("retry_execution")
-                and attempt < config.max_attempts
-            ):
-                await update_response(
-                    "[x] ==Execution plan corrected. Starting the next attempt.==",
-                    predicted_add=len(config.main_sequence) + 5,
-                )
-                return True, guidance, retry_feedback
-            if repair is not None and repair.exit_code == 0 and attempt < config.max_attempts:
-                await update_response(
-                    "[x] ==Environment repair completed. Starting the next attempt.==",
-                    predicted_add=len(config.main_sequence) + 5,
-                )
-                return True, guidance, retry_feedback
-
-        if "guidance" in response:
-            guidance = response["guidance"]
-
-    if post_data.get("environment_related") and attempt >= config.max_attempts:
-        guidance = guidance or "The environment could not be repaired within the configured number of attempts."
-
-    return False, guidance, retry_feedback
 
 
 def contains_rtl(string):
