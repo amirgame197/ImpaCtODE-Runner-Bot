@@ -32,6 +32,12 @@ Make sure your current working directory is this directory.
 > sudo apt-get update
 > sudo apt-get install -y qemu-system-x86 qemu-utils
 > ```
+>
+> And to remove it later if you want to get rid of QEMU completely:
+>
+> ```bash
+> sudo apt-get autoremove qemu-system-x86 qemu-utils
+> ```
 
 ### Windows
 

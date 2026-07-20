@@ -1,4 +1,13 @@
-"""Ensure the Debian-provided QEMU executables are available and usable."""
+"""
+Ensure the Debian-provided QEMU executables are available and usable.
+Windows binaries work across versions, but since Linux distributions can vary, this code checks for the executables and attempts to install them if they are missing or broken. 
+If installation fails, the bot will continue running, but VM executions will not work.
+The bot uses the system QEMU executables at /usr/bin/qemu-img and /usr/bin/qemu-system-x86_64, which are provided by the qemu-utils and qemu-system-x86 packages. 
+If these executables are not found or fail to start, the bot will attempt to install the packages using apt-get.
+
+There is one other workaround, and is just compiling QEMU at runtime, which is really not the path I'd choose. 
+So I'll stick with an external package manager (apt) for now.
+"""
 
 from dataclasses import dataclass
 from pathlib import Path
