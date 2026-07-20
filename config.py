@@ -112,9 +112,6 @@ qemu_executable = {
         "qemu-img": ROOT / "QEMU" / "Binaries" / "Linux" / "bin" / "qemu-img",
         "qemu-system-x86_64": ROOT / "QEMU" / "Binaries" / "Linux" / "bin" / "qemu-system-x86_64",
 
-        "lib": ROOT / "QEMU" / "Binaries" / "Linux" / "lib",
-        # ? Path to the QEMU shared libraries, which must be added to LD_LIBRARY_PATH on Linux
-        
         "data": ROOT / "QEMU" / "Binaries" / "Linux" / "share",
         # ? QEMU data and SeaBIOS firmware paths required by the bundled Linux binary
     },

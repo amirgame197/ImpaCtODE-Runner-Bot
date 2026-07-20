@@ -135,7 +135,8 @@ def ensure_language_support_images() -> None:
 
         decision = "a" if download_all else _prompt_for_download(language)
         if decision == "c":
-            raise SystemExit("Language support setup cancelled.")
+            # raise SystemExit("Language support setup cancelled.")
+            break
         if decision == "n":
             continue
         if decision == "a":

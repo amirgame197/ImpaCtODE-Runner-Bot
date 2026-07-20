@@ -13,6 +13,7 @@ import os
 
 _accelerator = None
 
+
 class EnvironmentError(Exception):
     pass
 
@@ -24,13 +25,23 @@ def fix_qemu_permissions(folder):
     if platform.system() == "Linux":
         for file in Path(folder).iterdir():
             if file.is_file():
-                file.chmod(file.stat().st_mode | stat.S_IEXEC)
+                try:
+                    file.chmod(file.stat().st_mode | stat.S_IEXEC)
+                except OSError as error:
+                    print(f"[QEMU compatibility] WARNING: could not mark {file} executable: {error}", flush=True)
 
 
 for qemu_executable in config.qemu_executable["Linux"].values():
     if Path(qemu_executable).is_file():
         fix_qemu_permissions(Path(qemu_executable).parent)
 
+
+if platform.system() == "Linux":
+    from QEMU.Binaries.Linux.Compatibility import ensure_qemu_available
+
+    _linux_qemu_compatibility = ensure_qemu_available()
+else:
+    _linux_qemu_compatibility = None
 
 @dataclass
 class CommandResult:
@@ -46,26 +57,10 @@ def platform_key():
     return key
 
 
-def qemu_subprocess_env():
-    """Return the environment required by the bundled QEMU binaries.
-    """
-    if platform.system() != "Linux":
-        return None
-
-    environment = os.environ.copy()
-    library_path = str(config.qemu_executable["Linux"]["lib"])
-    existing_path = environment.get("LD_LIBRARY_PATH")
-    environment["LD_LIBRARY_PATH"] = (
-        f"{library_path}{os.pathsep}{existing_path}" if existing_path else library_path
-    )
-    return environment
-
-
 def qemu_firmware_args():
     if platform.system() != "Linux":
         return []
-    linux_qemu = config.qemu_executable["Linux"]
-    return ["-L", str(linux_qemu["data"])]
+    return ["-L", str(config.qemu_executable["Linux"]["data"])]
 
 
 def host_memory_mb():
@@ -125,7 +120,6 @@ async def host_virtualization():
             stdout=asyncio.subprocess.DEVNULL,
             stderr=asyncio.subprocess.DEVNULL,
             cwd=qemu.parent,
-            env=qemu_subprocess_env(),
         )
         try:
             await asyncio.wait_for(process.wait(), timeout=0.75)
@@ -194,6 +188,13 @@ class QemuEnvironment:
         self.qemu_output = (self.qemu_output + text)[-config.captured_environment_output_limit:]
 
     def qemu_paths(self):
+        if _linux_qemu_compatibility and not _linux_qemu_compatibility.available:
+            raise EnvironmentError(
+                "The bundled QEMU binary cannot use its host dependencies, so VM executions cannot run. "
+                "The host owner should install qemu-system-x86 and qemu-utils with apt-get. "
+                f"Last check: {_linux_qemu_compatibility.detail}"
+            )
+
         executables = config.qemu_executable[platform_key()]
         qemu_img = Path(executables["qemu-img"])
         qemu = Path(executables["qemu-system-x86_64"])
@@ -214,7 +215,6 @@ class QemuEnvironment:
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
             cwd=qemu_img.parent,
-            env=qemu_subprocess_env(),
         )
         output, _ = await process.communicate()
         if process.returncode:
@@ -302,7 +302,6 @@ class QemuEnvironment:
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT,
                 cwd=qemu.parent,
-                env=qemu_subprocess_env(),
             )
         except Exception:
             await self.close_serial_transport()

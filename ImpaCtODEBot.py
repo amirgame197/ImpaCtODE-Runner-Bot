@@ -419,7 +419,7 @@ async def run_main_sequence(message_text, update_response):
 
     language = sequence_data.get("language")
     language_steps = config.languages_sequence.get(language)
-    if language == "None" or not language_steps:
+    if language == "None" or not language_steps or not language_steps[0].get("overlay_path").is_file():
         await update_response("❌️ ==Code language is unsupported or is not implemented yet.==", end_sequence=True)
         return None
 
