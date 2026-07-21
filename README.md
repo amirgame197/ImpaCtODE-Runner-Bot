@@ -127,7 +127,15 @@ By default, the AI requests use the [Mistral API](https://console.mistral.ai/) t
 python Launcher.py
 ```
 
-The launcher first checks for the base VM image and enabled language overlays. If an image is missing, it asks whether it should download and extract it automatically. Choose `a` to download all missing enabled language images. It then lets you start the Telegram bot, the web interface, or both. Open `http://localhost:1991` on the host machine; by default the web listener binds to all network interfaces.
+> [!Tip]
+> You can run the launcher with any, or all of the following arguments:
+> 
+> `bot` - Launch the telegram bot.<br>
+> `web` - Launch the web interface.
+>
+> Not including any of the arguments above will cause the launcher to prompt you to choose manually.
+
+The launcher first checks for the base VM image and enabled language overlays. If an image is missing, it asks whether it should download and extract it automatically. Choose `a` to download all missing enabled language images. It then lets you start the Telegram bot, web interface, or both. Open `http://localhost:1991` on the host machine; by default the web listener binds to all network interfaces.
 
 That is all. Open the interface you selected: in Telegram, send `/start` and use `/run`. In the browser, create a run from the main page and follow its live output.
 

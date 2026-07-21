@@ -28,7 +28,7 @@ def get_environment_variable(name):
     
     # Save to .env file for persistence across sessions
     set_key(str(ENV_FILE), name, variable)
-    print(f"Saved {name} to {ENV_FILE}")
+    print(f"Saved {name} to {ENV_FILE}", flush=True)
     
     return variable
 
@@ -47,7 +47,7 @@ web_secret_key = get_environment_variable("IMPACTODE_WEB_SECRET_KEY")
 # # #################### Bot Responses Configuration ###################################################
 
 usage_instructions = """
-<aside><b>ImpaCtODE</b><cite>ᯤ</cite></aside>
+<aside><tg-math>ImpaCtODE</tg-math><cite>ᯤ</cite></aside>
 
 ##### Run your codes in a disposable Linux environment and follow its output live.
 ---

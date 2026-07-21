@@ -19,8 +19,10 @@ def choose_interface():
 
         if choice == "1":
             return True, False
+        
         elif choice == "2":
             return False, True
+        
         elif choice == "3":
             return True, True
 
@@ -38,6 +40,7 @@ def stop_interfaces(processes):
         if process.poll() is None:
             try:
                 process.wait(timeout=5)
+            
             except subprocess.TimeoutExpired:
                 process.kill()
 
@@ -46,8 +49,10 @@ def launch_interfaces(telegram, web):
     """Launch and keep track of each selected interface process.
     """
     targets = []
+    
     if telegram:
         targets.append(("Telegram bot", ROOT / "ImpaCtODEBot.py"))
+    
     if web:
         targets.append(("Web interface", ROOT / "ImpaCtODEWeb.py"))
 
@@ -66,12 +71,22 @@ def launch_interfaces(telegram, web):
                     print(f"{name} stopped with exit code {process.returncode}.", flush=True)
                     active_processes.remove(index)
             time.sleep(0.25)
+    
     except KeyboardInterrupt:
         print("\nStopping launched interfaces...", flush=True)
+    
     finally:
         stop_interfaces(processes)
 
 
 if __name__ == "__main__":
-    telegram, web = choose_interface()
+    arguments = set(sys.argv[1:])
+    if arguments:
+        # ? Unknown arguments are just ignored.
+        telegram = "bot" in arguments
+        web = "web" in arguments
+    
+    else:
+        telegram, web = choose_interface()
+
     launch_interfaces(telegram, web)
