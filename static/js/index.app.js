@@ -34,6 +34,7 @@ let socket = null;
 let renderQueued = false;
 let pendingEnvironmentScrollFor = null;
 let pendingStatusScrollFor = null;
+let previousEnvironmentScroll = null;
 let draftSaveTimer = null;
 let persistenceTimer = null;
 let pendingLogScroll = false;
@@ -639,6 +640,13 @@ function updateRunTitleLabel(runId, title) {
 }
 
 function renderWorkspace(animate) {
+    const currentOutput = elements.workspace.querySelector(".environment-output");
+    previousEnvironmentScroll = currentOutput ? {
+        runId: currentOutput.dataset.runId,
+        top: currentOutput.scrollTop,
+        left: currentOutput.scrollLeft,
+    } : null;
+
     let page;
     if (state.activeTab === HOME_TAB_ID) {
         page = createHomePage();
@@ -653,6 +661,15 @@ function renderWorkspace(animate) {
         page.classList.add("page-enter");
     }
     elements.workspace.replaceChildren(page);
+
+    const replacementOutput = elements.workspace.querySelector(".environment-output");
+    if (replacementOutput && previousEnvironmentScroll && replacementOutput.dataset.runId === previousEnvironmentScroll.runId) {
+        // Workspace rendering replaces the terminal node. Restore its viewport before
+        // the next output update continues the scroll toward the bottom.
+        replacementOutput.scrollTop = previousEnvironmentScroll.top;
+        replacementOutput.scrollLeft = previousEnvironmentScroll.left;
+    }
+    previousEnvironmentScroll = null;
 }
 
 function createLogsPage() {
@@ -1272,7 +1289,7 @@ function connectSocket() {
     }
 
     socket.on("connect", () => {
-        setConnectionState("is-connected", "Live");
+        setConnectionState("is-connected", "On");
         addInterfaceLog("info", "Socket connected.");
         subscribeToRuns();
         state.tabs.filter((run) => run.pendingSubmission).forEach(dispatchQueuedRun);

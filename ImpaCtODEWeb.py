@@ -15,7 +15,7 @@ MAX_CONTENT_LENGTH = config.web_max_content_length
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading", max_http_buffer_size=MAX_CONTENT_LENGTH,)
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="gevent", max_http_buffer_size=MAX_CONTENT_LENGTH)
 
 # ? Keep sequence work on its own normal asyncio loop, separate from Socket.IO requests
 runner_loop = asyncio.new_event_loop()
