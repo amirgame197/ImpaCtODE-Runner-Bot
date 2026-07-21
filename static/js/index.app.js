@@ -622,7 +622,7 @@ function finishRunTitleEdit(runId, input, originalTitle, cancel = false) {
         return;
     }
 
-    run.title = cancel ? originalTitle : (input.value.trim() || "Untitled run");
+    run.title = cancel ? originalTitle : (input.value.trim() || "Untitled Run");
     editingRunTitleId = null;
     persistState();
     updateRunTitleLabel(run.id, run.title);
@@ -828,7 +828,7 @@ function createRunTitleInput(run) {
     title.maxLength = 80;
     title.setAttribute("aria-label", "Run name");
     title.addEventListener("input", () => {
-        run.title = title.value.trim() || "Untitled run";
+        run.title = title.value.trim() || "Untitled Run";
         updateRunTitleLabel(run.id, run.title);
         persistState();
     });

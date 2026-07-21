@@ -32,7 +32,7 @@ def run_asyncio_loop():
 
 runner_thread = threading.Thread(
     target=run_asyncio_loop,
-    name="ImpaCtODE sequence runner",
+    name="Sequence runner",
     daemon=True,
 )
 runner_thread.start()
@@ -41,10 +41,10 @@ runner_thread.start()
 def get_owner_id():
     """Get the browser's temporary ID without using a database.
     """
-    owner_id = session.get("impactode_web_owner")
+    owner_id = session.get("web_owner")
     if not owner_id:
         owner_id = uuid.uuid4().hex
-        session["impactode_web_owner"] = owner_id
+        session["web_owner"] = owner_id
     return owner_id
 
 
@@ -272,7 +272,7 @@ def abort_sequence(payload):
 
 if __name__ == '__main__':
     try:
-        socketio.run(app, host=config.web_listen_ip, port=config.web_listen_port, allow_unsafe_werkzeug=True)
+        socketio.run(app, host=config.web_listen_ip, port=config.web_listen_port)
     finally:
         runner_loop.call_soon_threadsafe(runner_loop.stop)
         runner_thread.join(timeout=3)
