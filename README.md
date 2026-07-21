@@ -27,7 +27,7 @@ When a run starts, the bot:
 
 Each sandbox normally has **1 GB RAM**, **2 CPU cores**, and a maximum lifetime of **15 minutes**. Failed runs can receive an automatic environment-repair attempt before the bot shows possible code fixes. The VM is destroyed after the run, so it does not modify your workstation or the next run's environment.
 
-ImpaCtODE is built with Python, an OpenAI-compatible SDK, [Telethon](https://codeberg.org/Lonami/Telethon), Flask-SocketIO with native threading, and bundled QEMU binaries for Windows and Linux.
+ImpaCtODE is built with Python, an OpenAI-compatible SDK, [Telethon](https://codeberg.org/Lonami/Telethon), Flask-SocketIO with async `gevent`, and bundled QEMU binaries for Windows and Linux.
 
 ## AI assistance
 
