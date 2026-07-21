@@ -272,6 +272,7 @@ def abort_sequence(payload):
 
 if __name__ == '__main__':
     try:
+        print(f"Web interface will be available at http://{config.web_listen_ip}:{config.web_listen_port}", flush=True)
         socketio.run(app, host=config.web_listen_ip, port=config.web_listen_port)
     finally:
         runner_loop.call_soon_threadsafe(runner_loop.stop)
