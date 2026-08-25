@@ -10,6 +10,8 @@ Try the public demo: [**@ImpaCtODE_Bot**](https://t.me/ImpaCtODE_Bot).
 
 > [!NOTE]
 > The demo currently runs on my own system, which is not especially fast (mostly for compile-based languages). It may not be the smoothest experience, but it works and is a good way to see the project in action.
+>
+> **The demo is currently shut down.**
 
 ## What it does
 
