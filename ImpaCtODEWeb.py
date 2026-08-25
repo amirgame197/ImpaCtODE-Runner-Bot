@@ -39,7 +39,7 @@ runner_thread.start()
 
 
 def get_owner_id():
-    """Get the browser's temporary ID without using a database.
+    """Get the browser's temporary ID
     """
     owner_id = session.get("web_owner")
     if not owner_id:
@@ -73,7 +73,7 @@ def make_snapshot(run):
 
 
 def publish_update(run_id, update):
-    """Save one Runner update and send the current sequence panel to its tab.
+    """Save one Runner update and send the current sequence panel to its tab
     """
     with runs_lock:
         run = runs.get(run_id)
@@ -117,7 +117,7 @@ def publish_update(run_id, update):
 
 
 def runner_failed(run_id, task):
-    """Show an unexpected worker error instead of leaving a tab on running.
+    """Show an unexpected worker error instead of leaving a tab on running
     """
     try:
         task.result()
@@ -162,7 +162,7 @@ def connect():
 
 @socketio.on("subscribe_runs")
 def subscribe_runs(payload):
-    """Restore current active tabs after a browser refresh or reconnect.
+    """Restore current active tabs after a browser refresh or reconnect
     """
     run_ids = payload.get("run_ids", []) if isinstance(payload, dict) else []
     if not isinstance(run_ids, list):
@@ -193,7 +193,7 @@ def subscribe_runs(payload):
 
 @socketio.on("run_sequence")
 def run_sequence(payload):
-    """Start a sequence without blocking the WebSocket connection.
+    """Start a sequence without blocking the WebSocket connection
     """
     if not isinstance(payload, dict):
         return {"error": "Invalid run request."}
@@ -246,7 +246,7 @@ def run_sequence(payload):
 
 @socketio.on("abort_sequence")
 def abort_sequence(payload):
-    """Stop the current sequence belonging to this browser.
+    """Stop the current sequence belonging to this browser
     """
     run_id = get_run_id(payload.get("run_id")) if isinstance(payload, dict) else None
     if not run_id:

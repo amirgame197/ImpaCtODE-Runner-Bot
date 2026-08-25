@@ -8,7 +8,6 @@ import asyncio
 import random
 import config
 import html
-import sys
 import re
 
 config.token = config.get_environment_variable("IMPACTODE_TELEGRAM_BOT_TOKEN")
@@ -18,10 +17,10 @@ config.app_hash = config.get_environment_variable("IMPACTODE_TELEGRAM_APP_HASH")
 client = TelegramClient('impactode', config.app_id, config.app_hash, connection_retries=None, retry_delay=15).start(bot_token=config.token) # token
 _active_sequences = {}
 
-# # #################### Input Handling ################################################################
+# # #################### Input Handling ############################################################
 
 async def process_message(event):
-    """Process incoming messages and handle commands.
+    """Process incoming messages and handle commands
     """
     message = get_message(event.message)
     message_lower = message.lower()
@@ -50,7 +49,7 @@ async def process_message(event):
 
 
 def check_command(text, command, startswith=False):
-    """Check if the text matches the command, optionally allowing for a prefix.
+    """Check if the text matches the command, optionally allowing for a prefix
     """
     if startswith:
         return text.startswith(f'/{command}') # ? or text.startswith(f'/{command}@{config.bot_username}')
@@ -59,7 +58,7 @@ def check_command(text, command, startswith=False):
 
 
 def get_message(message):
-    """Extract the text content from a message, with handling various message formats.
+    """Extract the text content from a message, with handling various message formats
     """
     try:
         # Prefer the normal message text if it exists
@@ -164,7 +163,7 @@ def get_message(message):
     except Exception:
         return ""
 
-# # #################### Sequence Steps ################################################################
+# # #################### Sequence Steps ############################################################
 
 async def running_sequence(event, message_text, owner_id=None):
     """Run the main, language and post sequence
@@ -280,14 +279,14 @@ async def running_sequence(event, message_text, owner_id=None):
 
 
 def contains_rtl(string):
-    """Check if the string contains any right-to-left characters.
+    """Check if the string contains any right-to-left characters
     """
     return any(unicodedata.bidirectional(ch) in ("R", "AL", "AN") for ch in string)
 
-# # #################### Rich Messages #################################################################
+# # #################### Rich Messages #############################################################
 
 async def send_rich_message(event, markdown_text, reply_to_msg_id=None, buttons=None):
-    """Send a telegram-native rich message with markdown formatting, optionally replying to a specific message.
+    """Send a telegram-native rich message with markdown formatting, optionally replying to a specific message
     """
     await event.client(
         functions.messages.SendMessageRequest(
@@ -307,7 +306,7 @@ async def send_rich_message(event, markdown_text, reply_to_msg_id=None, buttons=
 
 
 async def edit_rich_message(event, markdown_text, buttons=None):
-    """Edit a telegram-native rich message with markdown formatting.
+    """Edit a telegram-native rich message with markdown formatting
     """
     await event.client(
         functions.messages.EditMessageRequest(
@@ -324,11 +323,11 @@ async def edit_rich_message(event, markdown_text, buttons=None):
         )
     )
 
-# # #################### External Handlers #############################################################
+# # #################### External Handlers #########################################################
 
 @client.on(events.CallbackQuery)
 async def callback_handler(event):
-    """Handle callback queries.
+    """Handle callback queries
     """
     data = event.data.decode("utf-8", errors="replace")
 
@@ -346,20 +345,25 @@ async def callback_handler(event):
         sequence_task.cancel()
         await event.answer("Aborting run...")
 
-# # #################### Startup Settings ##############################################################
+# # #################### Startup Settings ##########################################################
 
 async def heartbeat():
-    """Periodically check the bot's connection to Telegram and exit if it fails."""
+    """Periodically check the bot's connection to Telegram and exit if it fails
+    The external service manager (systemd, Docker, etc.) can then restart the process
+    """
+    if not config.bot_use_heartbeat:
+        return
+    
     while True:
         try:
-            me = await asyncio.wait_for(client.get_me(input_peer=True), timeout=60)
+            me = await asyncio.wait_for(client.get_me(), timeout=60)
             if me is None:
                 raise RuntimeError("get_me() returned None")
         except Exception as exc:
             print(f"Heartbeat Failed: {exc!r}", flush=True)
-            sys.exit(1)
+            os._exit(1)
         
-        # 3 minutes interval
+        # ? 3 Minutes interval
         await asyncio.sleep(180)
 
 

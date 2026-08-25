@@ -8,10 +8,10 @@ import json
 
 _run_queue = asyncio.Semaphore(config.concurrent_runs)
 
-# # #################### Sequence Steps ################################################################
+# # #################### Sequence Steps ############################################################
 
 async def send_update(update_callback, update):
-    """Send a normal sequence update to the active interface.
+    """Send a normal sequence update to the active interface
     """
     response = update_callback(update)
     if inspect.isawaitable(response):
@@ -20,7 +20,7 @@ async def send_update(update_callback, update):
 
 
 async def running_sequence(message_text, update_callback):
-    """Run the main, language and post sequence.
+    """Run the main, language and post sequence
     """
     environment = None
     timeout_task = None
@@ -164,14 +164,14 @@ async def running_sequence(message_text, update_callback):
 
 
 def get_step_fields(step):
-    """Return the configured JSON response fields for a sequence step.
+    """Return the configured JSON response fields for a sequence step
     """
     schema = step.get("response_format", {}).get("json_schema", {}).get("schema", {})
     return schema.get("properties", {})
 
 
 async def generate_step(step, sequence_data):
-    """Run one AI sequence step and return its JSON response.
+    """Run one AI sequence step and return its JSON response
     """
     response = await TextGen.generate(
         model_name=step["model_name"],
@@ -192,7 +192,7 @@ async def generate_step(step, sequence_data):
 
 
 async def run_steps(steps, sequence_data, update_response):
-    """Run configured AI steps in order and keep their results in one dictionary.
+    """Run configured AI steps in order and keep their results in one dictionary
     """
     for step in steps:
         if "model_name" not in step:
@@ -210,7 +210,7 @@ async def run_steps(steps, sequence_data, update_response):
 
 
 async def run_commands(environment, commands, update_response):
-    """Run generated guest commands in order, stopping at the first non-zero exit code.
+    """Run generated guest commands in order, stopping at the first non-zero exit code
     """
     await update_response(predicted_add=1 if commands else 0)
     result = None
@@ -240,7 +240,7 @@ async def run_commands(environment, commands, update_response):
 
 
 async def run_main_sequence(message_text, update_response):
-    """Use config.main_sequence to detect, extract, and identify submitted code.
+    """Use config.main_sequence to detect, extract, and identify submitted code
     """
     sequence_data = await run_steps(
         config.main_sequence,
@@ -271,7 +271,7 @@ async def run_main_sequence(message_text, update_response):
 
 
 async def run_language_sequence(environment, sequence_data, update_response, attempt):
-    """Write the code, collect guest details, generate commands, and run them.
+    """Write the code, collect guest details, generate commands, and run them
     """
     language_config = next(
         (step for step in sequence_data["language_steps"] if "overlay_path" in step),
@@ -324,7 +324,7 @@ async def run_language_sequence(environment, sequence_data, update_response, att
 
 
 async def run_post_sequence(environment, sequence_data, failure, commands, update_response, attempt):
-    """Run config.post_sequence and return whether the code should be attempted again.
+    """Run config.post_sequence and return whether the code should be attempted again
     """
     post_data = {
         "code": sequence_data["code"],
@@ -388,6 +388,6 @@ async def run_post_sequence(environment, sequence_data, failure, commands, updat
 
 
 async def run_sequence(message_text, update_callback):
-    """Run a sequence with a normal update callback.
+    """Run a sequence with a normal update callback
     """
     await running_sequence(message_text, update_callback)

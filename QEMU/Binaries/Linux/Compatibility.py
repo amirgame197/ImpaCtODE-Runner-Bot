@@ -110,7 +110,8 @@ def _test_qemu():
 
 
 def _safe_test_qemu():
-    """Keep a failed host probe from preventing the bot itself from starting."""
+    """Keep a failed host probe from preventing the bot itself from starting
+    """
     try:
         return _test_qemu()
     except Exception as error:
@@ -163,7 +164,8 @@ def _install_qemu():
 
 
 def ensure_qemu_available():
-    """Return the cached result after testing or installing Debian QEMU once."""
+    """Return the cached result after testing or installing Debian QEMU once
+    """
     global _result
     if _result is not None:
         return _result

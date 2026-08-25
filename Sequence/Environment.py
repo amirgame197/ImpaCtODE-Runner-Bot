@@ -68,13 +68,13 @@ def host_memory_mb():
 
 
 async def host_virtualization():
-    """Return the best usable accelerator for the current QEMU host.
+    """Return the best usable accelerator for the current QEMU host
 
     QEMU can be built with an accelerator without the host being configured to
     use it (for example, when the Windows Hypervisor Platform feature is
     disabled).  Keep QEMU running briefly with the requested accelerator to
     verify that it is usable, rather than only checking whether it is compiled
-    into the bundled binary.
+    into the bundled binary
     """
     global _accelerator
     if _accelerator:
@@ -123,7 +123,7 @@ async def host_virtualization():
 
 
 class QemuEnvironment:
-    """One disposable QEMU overlay controlled through the guest serial console.
+    """One disposable QEMU overlay controlled through the guest serial console
     """
 
     def __init__(self, language, language_overlay, output_observer=None):
@@ -210,10 +210,10 @@ class QemuEnvironment:
             raise EnvironmentError(output.decode("utf-8", errors="replace"))
 
     async def start_serial_server(self):
-        """Listen for QEMU's dedicated guest serial connection.
+        """Listen for QEMU's dedicated guest serial connection
 
         Keeping the guest console off QEMU's stdio prevents the QEMU monitor
-        and its escape handling from sharing a channel with command data.
+        and its escape handling from sharing a channel with command data
         """
         self.serial_server = await asyncio.start_server(
             self.accept_serial_connection,
@@ -226,7 +226,8 @@ class QemuEnvironment:
         self.serial_port = sockets[0].getsockname()[1]
 
     async def accept_serial_connection(self, reader, writer):
-        """Accept exactly one connection from the QEMU serial backend."""
+        """Accept exactly one connection from the QEMU serial backend
+        """
         if self.serial_writer is not None:
             writer.close()
             with contextlib.suppress(ConnectionError):
@@ -254,7 +255,8 @@ class QemuEnvironment:
         self.serial_reader = None
 
     async def read_qemu_output(self):
-        """Drain QEMU diagnostics without treating them as guest serial data."""
+        """Drain QEMU diagnostics without treating them as guest serial data
+        """
         while True:
             data = await self.process.stdout.read(4096)
             if not data:
@@ -262,7 +264,7 @@ class QemuEnvironment:
             self.append_qemu_output(data.decode("utf-8", errors="replace"))
 
     async def start(self):
-        """Create the disposable overlay and wait for the guest ready marker.
+        """Create the disposable overlay and wait for the guest ready marker
         """
         await self.create_overlay()
         _, qemu = self.qemu_paths()
@@ -382,7 +384,7 @@ class QemuEnvironment:
             raise EnvironmentError("The QEMU serial console closed while writing a command.") from error
 
     async def execute(self, command, record_command=True):
-        """Run one command from the guest work directory.
+        """Run one command from the guest work directory
         """
         if not self.is_running:
             raise EnvironmentError("The QEMU environment is not running.")
@@ -420,7 +422,7 @@ class QemuEnvironment:
         return CommandResult(command, self.command_exit_code, self.output[start:])
 
     async def write_code_file(self, file_name, code):
-        """Write source code without adding it to the environment transcript.
+        """Write source code without adding it to the environment transcript
         """
         path = f"{self.guest_workdir.rstrip('/')}/{file_name}"
         await self.execute(f"mkdir -p {shlex.quote(self.guest_workdir)} && : > {shlex.quote(path)}", record_command=False)
@@ -432,7 +434,7 @@ class QemuEnvironment:
         return path
 
     async def destroy(self, timed_out=False):
-        """Stop the VM and delete its temporary overlay.
+        """Stop the VM and delete its temporary overlay
         """
         async with self.destroy_lock:
             self.timed_out = self.timed_out or timed_out

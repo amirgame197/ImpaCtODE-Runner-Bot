@@ -32,7 +32,7 @@ def get_environment_variable(name):
     
     return variable
 
-# # #################### Basic Bot Configuration #######################################################
+# # #################### Basic Bot Configuration ###################################################
 
 bot_username = "Automatic" # ? These will change on startup after a successful auth
 bot_name = "Automatic"     # ? ^^^^^^^^^^^^^^^^^^^^
@@ -42,9 +42,12 @@ token = "Automatic"        # ? These will change before bot's startup attempt
 app_id = "Automatic"       # ? ^^^^^^^^^^^^^^^^^^^^
 app_hash = "Automatic"     # ? ^^^^^^^^^^^^^^^^^^^^
 
+bot_use_heartbeat = True 
+# ? Should the telegram bot gets automatically killed after a connection drop
+
 web_secret_key = get_environment_variable("IMPACTODE_WEB_SECRET_KEY")
 
-# # #################### Bot Responses Configuration ###################################################
+# # #################### Bot Responses Configuration ###############################################
 
 usage_instructions = """
 <aside><tg-math>ImpaCtODE</tg-math><cite>ᯤ</cite></aside>
@@ -94,7 +97,7 @@ Failed runs may trigger an automatic environment repair attempt before possible 
 
 """
 
-# # #################### OpenAI SDK Configuration ######################################################
+# # #################### OpenAI SDK Configuration ##################################################
 
 openai_base_url = "https://api.mistral.ai/v1"
 openai_api_key = get_environment_variable("IMPACTODE_OPENAI_API_KEY")
@@ -102,7 +105,7 @@ openai_api_key = get_environment_variable("IMPACTODE_OPENAI_API_KEY")
 telegram_output_refresh_interval = 3
 # ? Seconds between Telegram message edits when showing the environment transcript
 
-# # #################### Web Interface Configuration ##################################################
+# # #################### Web Interface Configuration ###############################################
 
 web_listen_ip = "0.0.0.0"
 # ? Interface address. Use 127.0.0.1 when the web interface should stay local-only
@@ -116,7 +119,7 @@ web_max_content_length = 1024 * 1024
 web_output_limit = 64 * 1024
 # ? Latest environment transcript characters retained and sent to each web run view
 
-# # #################### QEMU Configuration ######################################################
+# # #################### QEMU Configuration ########################################################
 
 qemu_executable = {
     "Windows": {
@@ -148,7 +151,7 @@ captured_environment_output_limit = max(4096, web_output_limit)
 sequence_max_tokens = 2048
 # ? Default maximum response size for structured AI sequence steps
 
-# # #################### Sequence Structure Variables ##################################################
+# # #################### Sequence Structure Variables ##############################################
 
 max_attempts = 3
 # ? How many times the AI should try running the code after failure until it just aborts the process

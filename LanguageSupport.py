@@ -10,7 +10,7 @@ import os
 _DOWNLOAD_CHUNK_SIZE = 1024 * 1024
 
 def _format_size(byte_count: int) -> str:
-    """Format a byte count for compact terminal progress messages.
+    """Format a byte count for compact terminal progress messages
     """
     for unit in ("B", "KiB", "MiB", "GiB", "TiB"):
         if byte_count < 1024 or unit == "TiB":
@@ -34,7 +34,7 @@ def _show_progress(label: str, completed: int, total: int | None) -> None:
 
 
 def _download_and_extract(url: str, destination: Path, required_image: Path) -> None:
-    """Download a tar archive and safely extract its regular files to destination.
+    """Download a tar archive and safely extract its regular files to destination
     """
     destination.mkdir(parents=True, exist_ok=True)
     file_descriptor, temporary_archive_name = tempfile.mkstemp(
@@ -99,7 +99,7 @@ def _download_and_extract(url: str, destination: Path, required_image: Path) -> 
 
 
 def _prompt_for_download(language: str) -> str:
-    """Return the user's y/n/a/c decision for a missing language image.
+    """Return the user's y/n/a/c decision for a missing language image
     """
     while True:
         decision = input(
@@ -112,7 +112,7 @@ def _prompt_for_download(language: str) -> str:
 
 
 def ensure_language_support_images() -> None:
-    """Ensure the base image and selected language overlays are available locally.
+    """Ensure the base image and selected language overlays are available locally
     """
     overlays_dir = Path(config.overlays_dir)
     base_image = overlays_dir.parent / "base.qcow2"

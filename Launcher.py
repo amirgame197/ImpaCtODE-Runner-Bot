@@ -9,7 +9,7 @@ LanguageSupport.ensure_language_support_images()
 ROOT = Path(__file__).resolve().parent
 
 def choose_interface():
-    """Ask which interface(s) should be launched.
+    """Ask which interface(s) should be launched
     """
     while True:
         print("\n1. Launch Telegram Bot")
@@ -30,7 +30,7 @@ def choose_interface():
 
 
 def stop_interfaces(processes):
-    """Stop any interface processes that are still running.
+    """Stop any interface processes that are still running
     """
     for _, process in processes:
         if process.poll() is None:
@@ -46,7 +46,7 @@ def stop_interfaces(processes):
 
 
 def launch_interfaces(telegram, web):
-    """Launch and keep track of each selected interface process.
+    """Launch and keep track of each selected interface process
     """
     targets = []
     
