@@ -229,8 +229,8 @@ languages_sequence = {
                 }
             }
         },
-
     ],
+
     "JavaScript": [
         { 
             "overlay_path": overlays_dir / "javascript-base.qcow2", "file_name": "code.js",
@@ -285,8 +285,8 @@ languages_sequence = {
                 }
             }
         },
-
     ],
+    
     "TypeScript": [
         { 
             "overlay_path": overlays_dir / "javascript-base.qcow2", "file_name": "code.ts",
@@ -342,8 +342,8 @@ languages_sequence = {
                 }
             }
         },
-
     ],
+
     "C#": [
         { 
             "overlay_path": overlays_dir / "cfam-base.qcow2", "file_name": "code.cs",
@@ -403,8 +403,8 @@ languages_sequence = {
                 }
             }
         },
-
     ],
+
     "C++": [
         { 
             "overlay_path": overlays_dir / "cfam-base.qcow2", "file_name": "code.cpp",
@@ -464,8 +464,8 @@ languages_sequence = {
                 }
             }
         },
-
     ],
+
     "C": [
         { 
             "overlay_path": overlays_dir / "cfam-base.qcow2", "file_name": "code.c",
@@ -523,8 +523,8 @@ languages_sequence = {
                 }
             }
         },
-
     ],
+
     "Go": [
         { 
             "overlay_path": overlays_dir / "go-base.qcow2", "file_name": "code.go",
@@ -581,8 +581,8 @@ languages_sequence = {
                 }
             }
         },
-
     ],
+
     "Rust": [
         { 
             "overlay_path": overlays_dir / "rust-base.qcow2", "file_name": "src/main.rs",
@@ -643,8 +643,8 @@ languages_sequence = {
                 }
             }
         },
-
     ],
+
     "Java": [
         { 
             "overlay_path": overlays_dir / "java-base.qcow2", "file_name": "src/main/java/Main.java",
@@ -712,8 +712,115 @@ languages_sequence = {
                 }
             }
         },
-
     ],
+
+    "PHP": [
+        { 
+            "overlay_path": overlays_dir / "php-base.qcow2", "file_name": "code.php",
+            "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/php-base.qcow2.tar.xz"
+        },
+        {
+            "name": "PHP execution plan",
+            "description": "Creating ordered Linux shell commands to run the PHP code.",
+            "model_name": "codestral-latest",
+
+            "system_prompt": (
+                "You are a Debian PHP code execution planner. The supplied source code has already been written to "
+                "the supplied file_name in the supplied current working directory inside a disposable VM. "
+                "Return an ordered array of non-interactive /bin/bash commands that should run one after another. "
+
+                "Inspect use statements, require statements, include statements, and namespace usage before planning dependencies. "
+                "PHP built-in language features and standard extensions already installed in the environment must never be installed "
+                "again. This includes standard language functionality and extensions such as json, pcre, SPL, date, filter, hash, "
+                "session, tokenizer, Reflection, PDO, and all other functionality already provided by the installed PHP runtime. "
+
+                "Code that uses only the installed PHP runtime and extensions needs no dependency-install command. "
+                "Do not add speculative Composer packages. Install only confirmed third-party Composer packages when the source code "
+                "actually requires them, using 'composer require <package>'. "
+
+                "Current environment already has PHP CLI, Composer, and common PHP extensions installed, including cURL, mbstring, XML, "
+                "ZIP, and SQLite support. Do not reinstall existing PHP tools or extensions. "
+
+                "The current working directory is already initialized as a Composer project with a valid composer.json. "
+                "Do not run composer init and do not create a new project. "
+                "Do not modify the supplied PHP source file or add Composer autoload statements to it. "
+
+                "When external Composer packages are required, use 'composer require <package>' to add them and resolve their "
+                "transitive dependencies. Do not manually edit composer.json unless composer require cannot perform the required "
+                "operation. "
+
+                "Use PHP CLI to execute the supplied source file. "
+                "For scripts that require Composer dependencies, use "
+                "'php -d auto_prepend_file=vendor/autoload.php <file_name>' so the Composer autoloader is available without modifying "
+                "the supplied source file. "
+                "For scripts that use no Composer dependencies, use 'php <file_name>'. "
+
+                "If retry_feedback is non-empty, it identifies a command from an earlier failed plan. Treat it as mandatory "
+                "correction context: do not emit that command or an equivalent invalid command. "
+
+                "Each command starts in the stated working directory, so use explicit paths or commands and do not rely on "
+                "previous shell state. "
+
+                "The final command must execute the supplied PHP code in the foreground and wait for it to finish."
+            ),
+
+            "response_format": {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "PHPExecutionPlanResponse",
+                    "schema": {
+                        "properties": {
+                            "commands": {
+                                "description": "Ordered shell commands. The final command runs the submitted code in the foreground.",
+                                "items": { "type": "string" },
+                                "minItems": 1,
+                                "type": "array"
+                            }
+                        },
+                        "required": ["commands"],
+                        "title": "PHPExecutionPlanResponse",
+                        "type": "object"
+                    }
+                }
+            }
+        },
+    ],
+
+    # ? "<<LANGUAGE>>": [
+    # ?     { 
+    # ?         "overlay_path": overlays_dir / "<<LANGUAGE>>-base.qcow2", "file_name": "<<FILE>>",
+    # ?         "image_url": "https://github.com/amirgame197/ImpaCtODE-Runner-Bot/releases/latest/download/<<LANGUAGE>>-base.qcow2.tar.xz"
+    # ?     },
+    # ?     {
+    # ?         "name": "<<LANGUAGE>> execution plan",
+    # ?         "description": "Creating ordered Linux shell commands to run the <<LANGUAGE>> code.",
+    # ?         "model_name": "codestral-latest",
+    # ? 
+    # ?         "system_prompt": (
+    # ?             "Some system instructions to guide the AI."
+    # ?         ),
+    # ? 
+    # ?         "response_format": {
+    # ?             "type": "json_schema",
+    # ?             "json_schema": {
+    # ?                 "name": "<<LANGUAGE>>ExecutionPlanResponse",
+    # ?                 "schema": {
+    # ?                     "properties": {
+    # ?                         "commands": {
+    # ?                             "description": "Ordered shell commands. The final command runs the submitted code in the foreground.",
+    # ?                             "items": { "type": "string" },
+    # ?                             "minItems": 1,
+    # ?                             "type": "array"
+    # ?                         }
+    # ?                     },
+    # ?                     "required": ["commands"],
+    # ?                     "title": "<<LANGUAGE>>ExecutionPlanResponse",
+    # ?                     "type": "object"
+    # ?                 }
+    # ?             }
+    # ?         }
+    # ?     },
+    # ? ],
 }
 # ? Specific sequences for each supported programming language, used for language-specific processing steps
 

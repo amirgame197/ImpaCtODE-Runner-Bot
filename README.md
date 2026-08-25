@@ -52,6 +52,7 @@ The currently enabled, downloadable language environments are:
 | Go | Go overlay |
 | Rust | Rust overlay |
 | Java | Java overlay |
+| PHP | PHP overlay |
 
 Additionally, See [Adding a language](#adding-a-language) below.
 
