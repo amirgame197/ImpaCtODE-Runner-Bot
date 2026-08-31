@@ -177,3 +177,12 @@ Overlays/SequenceDisposal/run-temp-0001.qcow2
 ```
 
 The resulting image is temporary and can safely be deleted after the sandbox finishes.
+
+> [!TIP]
+> As a bonus, here's how the releases assets are generated:
+> 
+> ```bash
+> tar -cf NEW-OVERLAY.qcow2.tar.xz -I 'xz -9e --threads=16' NEW-OVERLAY.qcow2
+> ```
+> 
+> This command compresses `NEW-OVERLAY.qcow2` to `NEW-OVERLAY.qcow2.tar.xz` with maximum compression level.
