@@ -43,7 +43,7 @@ app_id = "Automatic"       # ? ^^^^^^^^^^^^^^^^^^^^
 app_hash = "Automatic"     # ? ^^^^^^^^^^^^^^^^^^^^
 
 bot_use_heartbeat = True 
-# ? Should the telegram bot gets automatically killed after a connection drop
+# ? Should the telegram bot get automatically killed after a connection drop
 
 web_secret_key = get_environment_variable("IMPACTODE_WEB_SECRET_KEY")
 
